@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=desktop生成器
+Comment=desktop生成器
+Exec=/usr/bin/python3 /home/user/桌面/pyside/python小程序项目/desktop文件生成器/desktopFileGen.py
+Icon=desktoplogo
+Terminal=false
+Categories=Utility;Graphics;

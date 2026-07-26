@@ -1,6 +1,7 @@
 import sys
 import os
 import re
+import subprocess
 from PySide2.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QSplitter, QTreeView, QFileSystemModel, QPushButton, QTextEdit,
@@ -46,10 +47,11 @@ class FileReaderThread(QThread):
 class SimpleGitClient(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("轻量级 Git 图形客户端 (支持多标签与大文件预览)")
+        self.setWindowTitle("轻量级 Git 图形客户端 (支持代理检测与多标签)")
         
         self.settings = QSettings("MyDevTools", "SimpleGitClient")
         self.current_repo_path = ""
+        self.detected_proxy_addr = ""  # 缓存检测到的代理地址
         
         self.process = QProcess(self)
         self.process.readyReadStandardOutput.connect(self.handle_stdout)
@@ -118,7 +120,7 @@ class SimpleGitClient(QMainWindow):
 
         # ================= 右侧：多标签页设计 =================
         self.right_tabs = QTabWidget()
-        self.right_tabs.setTabsClosable(True) # 开启 Tab 原生关闭按钮
+        self.right_tabs.setTabsClosable(True)
         self.right_tabs.tabCloseRequested.connect(self.on_tab_close_requested)
 
         # ---------- Tab 1: Git 操作台 ----------
@@ -143,27 +145,46 @@ class SimpleGitClient(QMainWindow):
         commit_layout.addWidget(self.btn_commit)
         commit_group.setLayout(commit_layout)
 
-        remote_group = QGroupBox("☁️ 远程同步 (Remote & Sync)")
+        remote_group = QGroupBox("☁️ 远程同步与网络代理 (Remote & Proxy)")
         remote_layout = QVBoxLayout()
+        
         url_layout = QHBoxLayout()
         url_layout.addWidget(QLabel("远程地址 (URL):"))
         self.input_remote_url = QLineEdit()
         self.input_remote_url.setPlaceholderText("例如: https://github.com/user/repo.git")
         url_layout.addWidget(self.input_remote_url)
+
         key_layout = QHBoxLayout()
         key_layout.addWidget(QLabel("访问令牌 (Token/Key):"))
         self.input_token = QLineEdit()
         self.input_token.setEchoMode(QLineEdit.Password)
         self.input_token.setPlaceholderText("输入 Personal Access Token (仅用于HTTPS)")
         key_layout.addWidget(self.input_token)
+
+        # 代理检测与应用控制栏
+        proxy_btn_layout = QHBoxLayout()
+        self.btn_check_proxy = QPushButton("🔍 查看系统代理配置")
+        self.btn_check_proxy.setStyleSheet("background-color: #FF9800; color: white; font-weight: bold;")
+        self.btn_check_proxy.clicked.connect(self.check_system_proxy)
+
+        self.btn_apply_git_proxy = QPushButton("🔗 应用到 Git 代理")
+        self.btn_apply_git_proxy.setStyleSheet("background-color: #9C27B0; color: white; font-weight: bold;")
+        self.btn_apply_git_proxy.setEnabled(False)  # 默认未检测到代理前不可用
+        self.btn_apply_git_proxy.clicked.connect(self.apply_git_proxy)
+
+        proxy_btn_layout.addWidget(self.btn_check_proxy)
+        proxy_btn_layout.addWidget(self.btn_apply_git_proxy)
+
         sync_btn_layout = QHBoxLayout()
         self.btn_pull = QPushButton("⬇️ 拉取 (git pull)")
         self.btn_push = QPushButton("⬆️ 推送 (git push)")
         self.btn_push.setStyleSheet("background-color: #2196F3; color: white; font-weight: bold;")
         sync_btn_layout.addWidget(self.btn_pull)
         sync_btn_layout.addWidget(self.btn_push)
+
         remote_layout.addLayout(url_layout)
         remote_layout.addLayout(key_layout)
+        remote_layout.addLayout(proxy_btn_layout)
         remote_layout.addLayout(sync_btn_layout)
         remote_group.setLayout(remote_layout)
 
@@ -179,7 +200,7 @@ class SimpleGitClient(QMainWindow):
         git_layout.addWidget(remote_group)
         git_layout.addWidget(console_group, stretch=1)
 
-        # ---------- Tab 2: 文件预览 (动态添加，默认不在 tabs 中) ----------
+        # ---------- Tab 2: 文件预览 ----------
         self.tab_preview = QWidget()
         preview_layout = QVBoxLayout(self.tab_preview)
         preview_layout.setContentsMargins(5, 5, 5, 5)
@@ -188,7 +209,6 @@ class SimpleGitClient(QMainWindow):
         self.lbl_preview_info = QLabel("准备加载...")
         self.lbl_preview_info.setStyleSheet("color: #2196F3; font-weight: bold;")
         
-        # 内部显式关闭按钮
         self.btn_close_preview = QPushButton("✖ 关闭预览")
         self.btn_close_preview.setStyleSheet("background-color: #F44336; color: white; font-weight: bold;")
         self.btn_close_preview.setFixedWidth(100)
@@ -205,10 +225,7 @@ class SimpleGitClient(QMainWindow):
         preview_layout.addLayout(preview_top_layout)
         preview_layout.addWidget(self.preview_editor)
 
-        # 初始化时只添加 Git 操作台
         self.right_tabs.addTab(self.tab_git, "🔧 Git 操作台")
-        
-        # 隐藏 Git 操作台的关闭按钮 (防止误关核心界面)
         self.right_tabs.tabBar().setTabButton(0, QTabBar.RightSide, None)
         self.right_tabs.tabBar().setTabButton(0, QTabBar.LeftSide, None)
 
@@ -222,6 +239,58 @@ class SimpleGitClient(QMainWindow):
         self.btn_pull.clicked.connect(self.git_pull)
         self.btn_push.clicked.connect(self.git_push)
 
+    # ================= 代理检测与设置逻辑 =================
+    def check_system_proxy(self):
+        """调用系统命令读取 gsettings 代理配置并输出到控制台"""
+        self.right_tabs.setCurrentWidget(self.tab_git)
+        self.log_to_console("\n[代理检测] 正在读取系统网络代理配置...", "#FFEB3B")
+        
+        try:
+            # 检查 gsettings 是否可用（Linux/麒麟系统标准）
+            res_mode = subprocess.run(["gsettings", "get", "org.gnome.system.proxy", "mode"], capture_output=True, text=True, timeout=2)
+            res_host = subprocess.run(["gsettings", "get", "org.gnome.system.proxy.http", "host"], capture_output=True, text=True, timeout=2)
+            res_port = subprocess.run(["gsettings", "get", "org.gnome.system.proxy.http", "port"], capture_output=True, text=True, timeout=2)
+
+            mode = res_mode.stdout.strip().replace("'", "")
+            host = res_host.stdout.strip().replace("'", "")
+            port = res_port.stdout.strip()
+
+            self.log_to_console(f"  • 系统代理模式 (mode): {mode}", "#00BCD4")
+            self.log_to_console(f"  • 代理服务器主机 (host): {host}", "#00BCD4")
+            self.log_to_console(f"  • 代理服务器端口 (port): {port}", "#00BCD4")
+
+            if mode == "manual" and host and port and port != "0":
+                self.detected_proxy_addr = f"http://{host}:{port}"
+                self.log_to_console(f"✅ 检测到有效系统代理: {self.detected_proxy_addr}", "#4CAF50")
+                self.btn_apply_git_proxy.setEnabled(True)
+                self.btn_apply_git_proxy.setText(f"🔗 应用到 Git ({host}:{port})")
+            else:
+                self.detected_proxy_addr = ""
+                self.log_to_console("⚠️ 当前系统未开启手动代理或未配置代理端口。", "#FF9800")
+                self.btn_apply_git_proxy.setEnabled(False)
+                self.btn_apply_git_proxy.setText("🔗 应用到 Git 代理")
+
+        except FileNotFoundError:
+            self.log_to_console("❌ 未找到 gsettings 工具（可能非 Linux 桌面环境），跳过系统代理检测。", "#F44336")
+        except Exception as e:
+            self.log_to_console(f"❌ 读取代理配置出错: {str(e)}", "#F44336")
+
+    def apply_git_proxy(self):
+        """将检测到的代理写入 Git 全局配置"""
+        if not self.detected_proxy_addr:
+            QMessageBox.warning(self, "提示", "未检测到可用的系统代理地址！")
+            return
+
+        try:
+            # 执行 git config 设置全局代理
+            subprocess.run(["git", "config", "--global", "http.proxy", self.detected_proxy_addr], check=True)
+            subprocess.run(["git", "config", "--global", "https.proxy", self.detected_proxy_addr], check=True)
+            
+            self.log_to_console(f"\n[Git 代理设置成功] 已成功将全局 Git 代理设为: {self.detected_proxy_addr}", "#4CAF50")
+            QMessageBox.information(self, "成功", f"已成功将 Git 全局代理设置为：\n{self.detected_proxy_addr}")
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"设置 Git 代理失败：\n{str(e)}")
+
     # ================= 动态 Tab 与预览逻辑 =================
     def on_file_double_clicked(self, index):
         if self.file_model.isDir(index):
@@ -230,7 +299,6 @@ class SimpleGitClient(QMainWindow):
         file_path = self.file_model.filePath(index)
         file_name = self.file_model.fileName(index)
         
-        # 如果预览 Tab 当前不在 TabWidget 中，则动态添加
         if self.right_tabs.indexOf(self.tab_preview) == -1:
             self.right_tabs.addTab(self.tab_preview, "👁️ 文件预览")
             
@@ -247,18 +315,16 @@ class SimpleGitClient(QMainWindow):
         self.reader_thread.start()
 
     def on_tab_close_requested(self, index):
-        """处理点击 Tab 栏上的 'X' 按钮事件"""
         if self.right_tabs.widget(index) == self.tab_preview:
             self.close_preview_tab()
 
     def close_preview_tab(self):
-        """统一的关闭预览 Tab 逻辑"""
         idx = self.right_tabs.indexOf(self.tab_preview)
         if idx != -1:
             self.right_tabs.removeTab(idx)
             
-        self.preview_editor.clear() # 释放文本内存
-        self.right_tabs.setCurrentWidget(self.tab_git) # 自动切回 Git 操作台
+        self.preview_editor.clear()
+        self.right_tabs.setCurrentWidget(self.tab_git)
 
     def show_preview_warning(self, msg):
         self.lbl_preview_info.setText(msg)
@@ -273,7 +339,7 @@ class SimpleGitClient(QMainWindow):
             self.lbl_preview_info.setText(f"预览: {file_name}")
             self.lbl_preview_info.setStyleSheet("color: #4CAF50; font-weight: bold;")
 
-    # ================= 持久化与 Git 逻辑保持不变 =================
+    # ================= 持久化与 Git 核心逻辑 =================
     def load_settings(self):
         last_repo = self.settings.value("last_repo_path", "")
         remote_url = self.settings.value("remote_url", "")
@@ -346,7 +412,7 @@ class SimpleGitClient(QMainWindow):
             QMessageBox.warning(self, "警告", "当前有 Git 命令正在执行，请稍后再试。")
             return
             
-        self.right_tabs.setCurrentWidget(self.tab_git) # 执行命令自动切回 Git 操作台
+        self.right_tabs.setCurrentWidget(self.tab_git)
         
         cmd = "git"
         self.log_to_console(f"\n> {cmd} {' '.join(args)}", "#FFEB3B")
