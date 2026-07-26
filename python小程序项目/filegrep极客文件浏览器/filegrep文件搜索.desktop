@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=filegrep文件搜索
+Comment=grep搜索文件内容
+Exec=/usr/bin/python3 /data/usershare/python小程序项目/filegrep极客文件浏览器/1.py
+Icon=/data/usershare/python小程序项目/filegrep极客文件浏览器/firegrep.png
+Terminal=false
+Categories=Utility;Graphics;
