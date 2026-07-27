@@ -1,0 +1,52 @@
+(function() {
+    // 1. 建立与 PySide 的 WebSocket 连接
+    const ws = new WebSocket('ws://127.0.0.1:9002');
+
+    // 2. 连接成功回调
+    ws.onopen = () => {
+        console.log('%c[PySide Bridge] 成功连接到 PySide 桌面端！', 'color: #4CAF50; font-weight: bold; font-size: 14px;');
+        
+        // 自动提取并发送当前网页的元数据
+        const pageInfo = {
+            action: 'report_page_info',
+            title: document.title,
+            url: window.location.href,
+            timestamp: new Date().toLocaleString()
+        };
+        
+        ws.send(JSON.stringify(pageInfo));
+        console.log('%c[PySide Bridge] 已自动推送到桌面端:', 'color: #2196F3;', pageInfo);
+    };
+
+    // 3. 接收 PySide 返回的消息
+    ws.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            console.log('%c[PySide Bridge] 收到来自 PySide 的回应:', 'color: #FF9800; font-weight: bold;', data);
+        } catch (e) {
+            console.log('[PySide Bridge] 收到原始文本:', event.data);
+        }
+    };
+
+    // 4. 异常与断开连接处理
+    ws.onerror = (err) => {
+        console.error('[PySide Bridge] 连接失败，请检查 PySide 程序是否已启动并在 9002 端口监听！', err);
+    };
+
+    ws.onclose = () => {
+        console.warn('[PySide Bridge] 与 PySide 的连接已断开');
+    };
+
+    // 5. 挂载全局快捷发送函数，方便直接在控制台随时测试
+    window.sendToPySide = function(msgData) {
+        if (ws.readyState === WebSocket.OPEN) {
+            const payload = typeof msgData === 'object' ? msgData : { text: String(msgData) };
+            ws.send(JSON.stringify(payload));
+            console.log('[PySide Bridge] 手动发送成功:', payload);
+        } else {
+            console.error('[PySide Bridge] 发送失败：当前未建立连接！');
+        }
+    };
+
+    console.log('%c[提示] 运行完成！后续可在控制台直接调用 sendToPySide("你的数据") 手动发消息。', 'color: #9C27B0;');
+})();

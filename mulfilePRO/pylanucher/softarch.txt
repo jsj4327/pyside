@@ -1,0 +1,35 @@
+PyLauncher/
+│
+├── main.py                  # 程序总入口：初始化 MVC 各组件并启动应用
+├── requirements.txt         # 依赖声明
+│
+├── model/                   # 【Model 层】数据与状态管理
+│   ├── __init__.py
+│   ├── project_model.py     # 项目数据模型：管理当前项目路径、文件列表、推荐入口、打开的标签页状态
+│   └── config_model.py      # 配置模型：持久化存储用户设置（窗口大小、历史参数、最近打开的项目）
+│
+├── view/                    # 【View 层】纯界面展示与布局
+│   ├── __init__.py
+│   ├── main_window.py       # 主窗口视图：顶层菜单、状态栏、分栏与 Tab 容器
+│   ├── project_tree_view.py # 左侧文件树视图：渲染目录结构与右键菜单
+│   ├── runner_view.py       # 运行控制面板视图：参数输入框、运行/停止按钮
+│   ├── console_view.py      # 终端控制台视图：富文本输出显示、清屏、日志过滤
+│   └── source_editor_view.py# 源码编辑视图：代码高亮、行号侧边栏、大纲导航面板
+│
+├── controller/              # 【Controller 层】业务调度与事件响应枢纽
+│   ├── __init__.py
+│   ├── main_controller.py   # 主控制器：协调各子控制器，管理全局生命周期
+│   ├── project_controller.py# 项目控制器：处理打开目录、文件选择、树状导航事件
+│   ├── runner_controller.py # 运行控制器：绑定进程启停、参数传递与控制台日志同步
+│   └── editor_controller.py # 编辑控制器：处理源码加载、代码大纲符号解析、文件保存逻辑
+│
+├── service/                 # 【Service 层】底层独立功能服务
+│   ├── __init__.py
+│   ├── scanner_service.py   # 扫描服务：AST 语法树解析、识别 main 入口
+│   ├── executor_service.py  # 执行服务：封装 QProcess 异步运行 Python 脚本
+│   └── analyzer_service.py  # 分析服务：提取类/函数大纲符号、统计代码行数
+│
+└── resources/               # 【资源层】
+    ├── icons/               # 图标资源
+    └── qss/
+        └── dark_style.qss   # 全局暗黑主题样式表
