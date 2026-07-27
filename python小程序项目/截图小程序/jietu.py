@@ -2,15 +2,14 @@ import sys
 import io
 from PIL import Image, ImageChops
 from PySide2.QtCore import Qt, QRect, QPoint, QSettings, QTimer, Signal
-from PySide2.QtGui import QPainter, QPen, QColor, QScreen, QGuiApplication, QImage, QPixmap
+from PySide2.QtGui import QPainter, QPen, QColor, QScreen, QGuiApplication, QImage, QPixmap, QKeySequence
 from PySide2.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
-                               QPushButton, QCheckBox, QLabel, QSpinBox, QMessageBox)
+                               QPushButton, QCheckBox, QLabel, QSpinBox, QMessageBox, QShortcut)
 
 class ScreenshotOverlay(QWidget):
     """矩形选区划定遮罩层（仅用于第一步划定区域）"""
     def __init__(self, mode="rect", enable_border=False, border_width=2, enable_shadow=True, callback=None):
         super().__init__()
-        # 使用整型或标准的枚举组合，避免 PySide2 的 DeprecationWarning
         self.setWindowFlags(Qt.WindowType(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool))
         self.setAttribute(Qt.WA_TranslucentBackground, False)
         
@@ -93,7 +92,6 @@ class PersistentBorderWindow(QWidget):
         pen = QPen(QColor(0, 200, 100), 2, Qt.SolidLine)
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
-        # 减去 1 像素防止边框被窗口边界切掉
         draw_rect = self.rect().adjusted(0, 0, -1, -1)
         painter.drawRect(draw_rect)
 
@@ -108,9 +106,6 @@ class ManualScrollControlWindow(QWidget):
         super().__init__()
         self.setWindowFlags(Qt.WindowType(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool))
         self.setAttribute(Qt.WA_TranslucentBackground, True)
-
-        layout = QHBoxLayout()
-        layout.setContentsMargins(8, 6, 8, 6)
 
         container = QWidget()
         container.setStyleSheet("""
@@ -194,7 +189,7 @@ class ControlPanel(QWidget):
         self.resize(300, 210)
         
         self.settings = QSettings("KylinTools", "ScreenShotApp")
-        self.corner_radius = 8  # 修复圆角属性缺失的问题
+        self.corner_radius = 8
 
         layout = QVBoxLayout()
         self.lbl_status = QLabel("状态: 就绪")
@@ -219,23 +214,37 @@ class ControlPanel(QWidget):
         self.chk_shadow = QCheckBox("启用阴影效果")
         layout.addWidget(self.chk_shadow)
 
-        self.btn_capture = QPushButton("开始矩形截图")
+        self.btn_capture = QPushButton("开始矩形截图 (Ctrl+Shift+S)")
         self.btn_capture.clicked.connect(self.start_screenshot)
         layout.addWidget(self.btn_capture)
 
-        self.btn_manual_scroll = QPushButton("手动滚动截图")
+        self.btn_manual_scroll = QPushButton("手动滚动截图 (Ctrl+Alt+S)")
         self.btn_manual_scroll.clicked.connect(self.start_manual_scroll_screenshot)
         layout.addWidget(self.btn_manual_scroll)
 
         self.setLayout(layout)
         
         self.load_settings()
+        self.register_shortcuts()  # 注册应用级快捷键
+        
         self.screenshot_overlay = None
         self.border_window = None
         self.float_window = None
         
         self.manual_rect = None
         self.manual_screenshots = []
+
+    def register_shortcuts(self):
+        """注册应用级快捷键（使用 QKeySequence 完美避开类型错误）"""
+        # Ctrl + Shift + S 触发普通截图
+        self.shortcut_rect = QShortcut(QKeySequence("Ctrl+Shift+S"), self)
+        self.shortcut_rect.setContext(Qt.ApplicationShortcut)
+        self.shortcut_rect.activated.connect(self.start_screenshot)
+
+        # Ctrl + Alt + S 触发滚动截图
+        self.shortcut_scroll = QShortcut(QKeySequence("Ctrl+Alt+S"), self)
+        self.shortcut_scroll.setContext(Qt.ApplicationShortcut)
+        self.shortcut_scroll.activated.connect(self.start_manual_scroll_screenshot)
 
     def load_settings(self):
         use_border = self.settings.value("use_border", False, type=bool)
@@ -289,18 +298,15 @@ class ControlPanel(QWidget):
         self.manual_rect = rect
         self.manual_screenshots.clear()
 
-        # 1. 自动截取第一张
         first_img = self.grab_region_image(pixmap, rect)
         self.manual_screenshots.append(first_img)
 
         self.lbl_status.setText("状态: 手动滚动截图中...")
         self.lbl_status.setStyleSheet("color: red; font-weight: bold;")
 
-        # 2. 弹出轻量边框窗口（精准匹配选区且完美穿透鼠标）
         self.border_window = PersistentBorderWindow(rect)
         self.border_window.show()
 
-        # 3. 弹出控制悬浮条
         self.float_window = ManualScrollControlWindow(count=len(self.manual_screenshots))
         self.float_window.capture_frame_signal.connect(self.on_capture_next_frame)
         self.float_window.finish_signal.connect(self.on_finish_manual_scroll)
@@ -356,17 +362,14 @@ class ControlPanel(QWidget):
             self.show()
             return
 
-        # 优化后的精确拼接逻辑
         final_pieces = [self.manual_screenshots[0]]
         for i in range(1, len(self.manual_screenshots)):
             prev_img = self.manual_screenshots[i - 1]
             curr_img = self.manual_screenshots[i]
             
-            # 寻找最佳重叠偏移量（剔除重复像素）
             best_offset = self.find_best_overlap(prev_img, curr_img)
             
             if best_offset > 0 and best_offset < curr_img.height:
-                # 裁剪掉当前帧与上一帧重复的顶部像素
                 cropped_curr = curr_img.crop((0, best_offset, curr_img.width, curr_img.height))
                 final_pieces.append(cropped_curr)
             else:
@@ -394,53 +397,7 @@ class ControlPanel(QWidget):
         QMessageBox.information(self, "提示", "手动滚动长图已成功拼合并复制到剪贴板！")
 
     def find_best_overlap(self, img1, img2):
-        """利用 SAD（绝对差值和）算法精确计算两张图的重叠行数，彻底消除重复像素"""
-        w, h1 = img1.width, img1.height
-        h2 = img2.height
-        
-        # 转换为灰度图以加快计算并提高鲁棒性
-        g1 = img1.convert("L")
-        g2 = img2.convert("L")
-        
-        # 取上一图底部的一部分作为模板（例如底部 30 像素）
-        sample_h = min(30, h1)
-        template = g1.crop((0, h1 - sample_h, w, h1))
-        
-        # 在下一图的顶部区域（比如前 80% 的高度范围内）搜索匹配位置
-        search_max = int(h2 * 0.8)
-        if search_max < sample_h:
-            return 0
-            
-        min_sad = float('inf')
-        best_y = 0
-        
-        # 逐行滑动对比计算绝对差值和 (SAD)
-        for y in range(0, search_max - sample_h):
-            target = g2.crop((0, y, w, y + sample_h))
-            diff = ImageChops.difference(template, target)
-            
-            # 获取当前偏移下的像素差异总和
-            extrema = diff.getextrema()
-            # 简便起见，利用像素直方图或直接求和判断相似度
-            # 这里通过计算差值图像的绝对能量和
-            sad = sum(diff.histogram()) # 或者是更精确的像素均值
-            
-            # 使用更标准的 SAD 计算差值
-            # 优化：直接用像素绝对值累加
-            diff_data = list(diff.getdata())
-            current_sad = sum(diff_data)
-            
-            if current_sad < min_sad:
-                min_sad = current_sad
-                best_y = y
-
-        # 如果最小误差在合理范围内，说明找到了真正的重复重叠区
-        # 这里的 sample_h 加上 best_y 即为上一张图中与下一张图重合的起始行在下一图中的对应位置
-        # 换句话说，下一图需要向下切掉前 (best_y + sample_h) 或者根据匹配点裁剪
-        # 我们的目标是把下一图中与上一图重复的部分切掉
-        return best_y + sample_h if min_sad < (w * sample_h * 255 * 0.1) else 0
-
-    def find_best_overlap(self, img1, img2):
+        """精准计算两张图的重叠行数"""
         h1, h2 = img1.height, img2.height
         search_max = int(h2 * 0.8)
         if search_max < 5:
@@ -454,12 +411,12 @@ class ControlPanel(QWidget):
         for y in range(0, search_max - strip_h):
             strip2 = img2.crop((0, y, img2.width, y + strip_h))
             diff_ext = ImageChops.difference(strip1, strip2).convert("L").getextrema()
-            total_diff = diff_ext[1]
+            total_diff = diff_ext[1] if diff_ext else 0
             if total_diff < min_diff_val:
                 min_diff_val = total_diff
                 best_y = y
 
-        return best_y if min_diff_val < 80 else int(h2 * 0.25)
+        return (best_y + strip_h) if min_diff_val < 80 else int(h2 * 0.25)
 
     def finalize_and_copy(self, cropped):
         if self.chk_border.isChecked():
@@ -502,10 +459,10 @@ class ControlPanel(QWidget):
             painter.drawImage(2, 2, cropped.toImage())
             painter.end()
             
-            clipboard = QGuiApplication.clipboard()
+            clipboard = QApplication.clipboard()
             clipboard.setImage(final_image)
         else:
-            clipboard = QGuiApplication.clipboard()
+            clipboard = QApplication.clipboard()
             clipboard.setImage(cropped.toImage())
 
 
