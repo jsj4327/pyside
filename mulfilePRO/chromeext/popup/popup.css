@@ -1,0 +1,103 @@
+document.getElementById('sendBtn').addEventListener('click', () => {
+  const textToSend = document.getElementById('commandInput').value.trim();
+  if (!textToSend) {
+    alert('请输入指令内容！');
+    return;
+  }
+
+  // 获取当前激活的标签页
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (!tabs || tabs.length === 0) return;
+    
+    const activeTabId = tabs[0].id;
+
+    // 在当前网页中执行脚本
+    chrome.scripting.executeScript({
+      target: { tabId: activeTabId },
+      func: sendAndFetchAIResponse,
+      args: [textToSend]
+    }, (results) => {
+      if (chrome.runtime.lastError) {
+        alert('执行失败: ' + chrome.runtime.lastError.message);
+      } else {
+        console.log("脚本执行成功，AI 正在处理...");
+      }
+    });
+  });
+});
+
+// ==================== 注入到网页中执行的完整函数 ====================
+function sendAndFetchAIResponse(commandText) {
+  // 1. 查找 DeepSeek 的输入框元素
+  const textarea = document.querySelector('textarea[name="search"][placeholder*="给 DeepSeek 发送消息"]');
+  
+  if (!textarea) {
+    alert('未能在当前页面找到 AI 输入框，请确保已打开 DeepSeek 聊天页面。');
+    return;
+  }
+
+  // 2. 聚焦并赋值
+  textarea.focus();
+  const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
+  if (nativeInputValueSetter) {
+    nativeInputValueSetter.call(textarea, commandText);
+  } else {
+    textarea.value = commandText;
+  }
+
+  // 3. 派发 input 事件通知网页前端框架
+  const inputEvent = new InputEvent('input', {
+    bubbles: true,
+    cancelable: true,
+    inputType: 'insertText',
+    data: commandText
+  });
+  textarea.dispatchEvent(inputEvent);
+
+  // 4. 模拟点击发送按钮或回车
+  setTimeout(() => {
+    const sendButton = document.querySelector('button[type="submit"]') || textarea.closest('form')?.querySelector('button');
+    if (sendButton) {
+      sendButton.click();
+    } else {
+      const enterEvent = new KeyboardEvent('keydown', {
+        key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true
+      });
+      textarea.dispatchEvent(enterEvent);
+    }
+
+    // 5. 等待 AI 响应并抓取消息及答案（因为 AI 是流式输出，需延迟几秒再抓取）
+    setTimeout(() => {
+      // 内部直接定义并执行抓取逻辑，避免作用域找不到的问题
+      const userMessageElements = document.querySelectorAll('.fbb737a4');
+      let targetUserElement = null;
+
+      // 倒序查找，匹配最后一条刚发送的相同文本
+      for (let i = userMessageElements.length - 1; i >= 0; i--) {
+        if (userMessageElements[i].textContent.includes(commandText)) {
+          targetUserElement = userMessageElements[i];
+          break;
+        }
+      }
+
+      if (targetUserElement) {
+        console.log("成功找到用户发送的消息元素：", targetUserElement);
+
+        // 尝试在页面中查找所有可能的回答/markdown 区域
+        const allAnswers = document.querySelectorAll('.markdown-body, div[class*="answer"], div[class*="response"]');
+        
+        if (allAnswers.length > 0) {
+          const latestAnswer = allAnswers[allAnswers.length - 1];
+          console.log("获取到的 AI 最新回答内容：", latestAnswer.innerText);
+          
+          // 如果你需要把答案展示在插件弹窗里，可以通过后续的 message 机制传回，这里先在控制台打印
+        } else {
+          console.log("未直接匹配到标准的回答类名。");
+        }
+      } else {
+        console.log("未能在页面中定位到刚才发送的用户消息。");
+      }
+    }, 4000); // 延迟 4 秒等待 AI 回复输出
+
+  }, 200);
+}

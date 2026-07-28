@@ -1,0 +1,78 @@
+#ai-assistant-floating-panel {
+  position: fixed !important;
+  top: 10vh !important;
+  right: 20px !important;
+  width: 20vw !important;
+  height: 80vh !important;
+  min-width: 250px !important;
+  min-height: 300px !important;
+  background: #ffffff !important;
+  border: 1px solid #ccc !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25) !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  font-family: Arial, sans-serif !important;
+  box-sizing: border-box !important;
+  resize: both !important;
+  overflow: hidden !important;
+}
+
+#ai-panel-header {
+  padding: 12px;
+  background: #f1f3f4;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  cursor: move;
+  user-select: none;
+}
+
+#ai-panel-body {
+  padding: 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+#ai-panel-body textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: none;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+#aiCommandInput {
+  height: 60px;
+  flex-shrink: 0;
+}
+
+#aiAnswerArea {
+  flex: 1 !important;
+  width: 100% !important;
+  background: #f9f9f9;
+  box-sizing: border-box;
+}
+
+#aiSendBtn {
+  width: 100%;
+  padding: 8px;
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 8px;
+  flex-shrink: 0;
+}
+
+#aiSendBtn:hover {
+  background-color: #357ae8;
+}

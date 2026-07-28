@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <h3>AI 自动化助手</h3>
+  
+  <!-- 发送区域 -->
+  <div class="input-group">
+    <textarea id="commandInput" placeholder="请输入要发送给 AI 的指令..." rows="3"></textarea>
+  </div>
+  <button id="sendBtn">发送运行</button>
+
+  <hr style="margin: 12px 0; border: none; border-top: 1px solid #ddd;">
+
+  <!-- 查找与展示区域 -->
+  <button id="fetchBtn" style="background-color: #28a745; margin-bottom: 8px;">查找最后一次回答</button>
+  <div class="input-group">
+    <textarea id="answerArea" placeholder="查找到的 AI 回答将显示在这里..." rows="5" readonly></textarea>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
