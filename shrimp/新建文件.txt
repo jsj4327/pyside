@@ -1,0 +1,17 @@
+{
+  "model": "deepseek-chat",
+  "messages": [
+    {
+      "role": "system",
+      "content": "你是一个代码生成助手。请严格按照以下JSON格式输出，不要输出任何Markdown标记或额外解释：\n{\n  \"files\": [\n    {\n      \"filename\": \"文件名1.py\",\n      \"code\": \"代码内容1\"\n    },\n    {\n      \"filename\": \"文件名2.py\",\n      \"code\": \"代码内容2\"\n    }\n  ]\n}"
+    },
+    {
+      "role": "user",
+      "content": "请帮我生成一个完整功能的简易标图程序，使用mvc架构，多个文件应用。文件层级包含在文件名中。默认有一个圆圈图标，后期在添加其他图标"
+    }
+  ],
+  "response_format": {
+    "type": "json_object"
+  },
+  "temperature": 0.1
+}

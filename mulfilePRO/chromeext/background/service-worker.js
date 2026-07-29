@@ -1,29 +1,28 @@
-chrome.action.onClicked.addListener((tab) => {
+chrome.action.onClicked.addListener(async (tab) => {
   console.log("【排查日志】捕获到图标点击事件！Tab ID:", tab.id);
   
   if (!tab.id) return;
   
-  // 1. 强行注入 CSS 样式
-  chrome.scripting.insertCSS({
-    target: { tabId: tab.id },
-    files: ["content/content-style.css"]
-  }, () => {
-    if (chrome.runtime.lastError) {
-      console.log("【排查日志】CSS 注入失败:", chrome.runtime.lastError.message);
-    } else {
-      console.log("【排查日志】CSS 样式注入成功");
-    }
-  });
+  try {
+    // 1. 强行注入 CSS 样式
+    await chrome.scripting.insertCSS({
+      target: { tabId: tab.id },
+      files: ["content/content-style.css"]
+    });
+    console.log("【排查日志】CSS 样式注入成功");
+  } catch (error) {
+    console.log("【排查日志】CSS 注入失败:", error.message);
+  }
 
-  // 2. 注入 JavaScript 逻辑
-  chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    files: ["content/content-script.js"]
-  }, () => {
-    if (chrome.runtime.lastError) {
-      console.log("【排查日志】JS 注入失败:", chrome.runtime.lastError.message);
-    } else {
-      console.log("【排查日志】JS 逻辑注入成功");
-    }
-  });
+  try {
+    // 2. 注入 JavaScript 逻辑（指定 world 为 "MAIN"）
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ["content/content-script.js"],
+      world: "MAIN" // 显式指定注入到主世界
+    });
+    console.log("【排查日志】JS 逻辑注入到主世界成功");
+  } catch (error) {
+    console.log("【排查日志】JS 注入失败:", error.message);
+  }
 });

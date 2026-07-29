@@ -109,6 +109,12 @@ class MainWindow(QMainWindow):
         self.status_timer.setInterval(5000)
         self.status_timer.timeout.connect(self.refresh_modification_tree)
 
+# 在 MainWindow.__init__ 中：
+        logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "projectbuilder.png")
+        if os.path.exists(logo_path):
+            icon = QIcon(logo_path)
+            self.setWindowIcon(icon)
+
         recent = ProjectConfig.get_recent_project()
         if recent and os.path.exists(recent):
             QTimer.singleShot(500, lambda: self.open_project(recent))
