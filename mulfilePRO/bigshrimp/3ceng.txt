@@ -1,0 +1,78 @@
+PyLauncher/
+│
+├── main.py                          # 程序总入口
+├── requirements.txt                 # 依赖声明
+├── config.json                      # 全局配置文件
+│
+├── model/                           # 【Model 层】数据、状态与配置持久化
+│   ├── __init__.py
+│   ├── base_model.py                # Model 基类（通用信号与状态通知）
+│   ├── project/                     # 项目与工作区域
+│   │   ├── __init__.py
+│   │   ├── project_model.py         # 工作区路径、文件树缓存状态
+│   │   └── tab_model.py             # 标签页与多文档打开状态管理
+│   ├── config/                      # 配置与持久化域
+│   │   ├── __init__.py
+│   │   ├── app_config_model.py      # 系统全局设置（QSettings 封装）
+│   │   └── ai_config_model.py       # 大模型参数、API Key、本地端点配置
+│   └── agent/                       # Agent 状态域
+│       ├── __init__.py
+│       ├── session_model.py         # 当前对话历史、上下文、Token 消耗统计
+│       └── prompt_template_model.py # Prompt 模板持久化与多场景管理
+│
+├── view/                            # 【View 层】纯界面展示与哑组件
+│   ├── __init__.py
+│   ├── main_window.py               # 主窗口骨架（菜单栏、状态栏、全局 Splitter）
+│   ├── components/                  # 通用自定义 UI 组件域
+│   │   ├── __init__.py
+│   │   ├── code_editor/             # 源码编辑器组件（高亮、行号、大纲侧边栏）
+│   │   ├── diff_viewer/             # AI 修改前后 Diff 对比视图组件
+│   │   └── terminal/                # 富文本控制台与日志过滤组件
+│   ├── panels/                      # 业务面板域
+│   │   ├── __init__.py
+│   │   ├── project_tree_panel.py    # 左侧文件目录树面板
+│   │   ├── runner_panel.py          # 沙箱控制与运行面板
+│   │   └── agent_chat_panel.py      # AI 交互、多 Tab Prompt 与审批面板
+│   └── dialogs/                     # 弹出对话框域
+│       ├── __init__.py
+│       ├── settings_dialog.py       # 设置面板弹窗
+│       └── approval_dialog.py       # 高危操作安全审批弹窗
+│
+├── controller/                      # 【Controller 层】业务调度与事件枢纽
+│   ├── __init__.py
+│   ├── main_controller.py           # 总控制器（生命周期、依赖注入与模块通信总线）
+│   ├── sub_controllers/             # 业务子控制器域
+│   │   ├── __init__.py
+│   │   ├── project_controller.py    # 项目加载、树状导航与文件 IO 调度
+│   │   ├── editor_controller.py     # 源码编辑、自动保存与静态大纲联动
+│   │   ├── runner_controller.py     # 沙箱进程调度、日志同步与自愈合触发
+│   │   └── agent_controller.py      # Agent 思考链、大模型流式响应与落盘编排
+│   └── handlers/                    # 事件与命令处理器域
+│       ├── __init__.py
+│       ├── event_bus.py             # 全局事件总线（实现模块间极低耦合通信）
+│       └── command_handler.py       # 用户高阶指令解析器
+│
+├── service/                         # 【Service 层】独立底层服务（绝对解耦 UI）
+│   ├── __init__.py
+│   ├── ai/                          # AI 与大模型通信域
+│   │   ├── __init__.py
+│   │   ├── bridge_service.py        # QWebSocketServer 浏览器插件桥接
+│   │   ├── prompt_engine.py         # Prompt 动态组装与模板引擎
+│   │   └── openclaw_gateway.py      # 外部多通道网关协议适配器
+│   ├── sandbox/                     # 沙箱与代码执行域
+│   │   ├── __init__.py
+│   │   ├── executor_service.py      # QProcess 异步子进程沙箱封装
+│   │   └── self_heal_service.py     # 沙箱报错 Traceback 拦截与自动修复闭环
+│   ├── analysis/                    # 静态分析与感知域
+│   │   ├── __init__.py
+│   │   ├── scanner_service.py       # AST 语法树解析、识别 main 入口
+│   │   ├── analyzer_service.py      # 类/函数大纲提取与代码行数统计
+│   │   └── db_inspector.py          # MySQL / SQL Server 数据库 Schema 探测
+│   └── storage/                     # 本地存储域
+│       ├── __init__.py
+│       └── file_io_service.py       # 安全文件读写、历史记录备份
+│
+└── resources/                       # 【资源层】静态资产
+    ├── icons/                       # UI 图标资产
+    └── qss/
+        └── dark_style.qss           # 全局暗黑主题样式表
