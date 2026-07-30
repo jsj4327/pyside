@@ -1,0 +1,47 @@
+{
+  "categories": [
+    "编程协同",
+    "翻译润色",
+    "文本写作",
+    "角色扮演",
+    "通用工具"
+  ],
+  "prompts": [
+    {
+      "id": "1785403810",
+      "title": "python 文件浏览器描述",
+      "category": "编程协同",
+      "tags": "",
+      "prompt": "请帮我用 PySide2 编写一个独立且可复用的文件浏览控件（FileBrowserWidget），继承自 QWidget。\n\n【功能与组件要求】：\n1. 界面布局：\n   - 顶部导航栏：包含“返回上一级”按钮、路径输入框（QLineEdit，按回车跳转）、“刷新”按钮。\n   - 主体部分：使用 QTreeView 配合 QFileSystemModel 展示本地目录树。\n2. 数据与交互逻辑：\n   - 使用 QFileSystemModel 加载指定根目录，默认隐藏系统隐蔽文件，按文件名升序排列。\n   - 双击文件夹时，可进入该文件夹（并将顶部路径栏更新为最新路径）。\n   - 包含根路径设置方法 `set_root_path(path: str)`，在路径无效时做防错处理。",
+      "notes": "",
+      "updated_at": "2026-07-30 17:30:10"
+    },
+    {
+      "id": "1785402711",
+      "title": "界面描述",
+      "category": "编程协同",
+      "tags": "",
+      "prompt": "一个界面程序，pyside2框架。主界面大小为屏幕的90%，居中显示，居中不包含底部工具栏。 \n\n不要使用会自动压缩空格的文本类控件。\n\n\n",
+      "notes": "",
+      "updated_at": "2026-07-30 17:26:24"
+    },
+    {
+      "id": "1",
+      "title": "Python 代码重构与架构分析",
+      "category": "编程协同",
+      "tags": "Python, 重构, 架构",
+      "prompt": "你是一个资深的 Python 架构师。请分析以下代码的逻辑缺陷、性能瓶颈以及架构不合理之处，并给出遵循 PEP 8 和模块化单体原则的重构建议：\n\n[在此粘贴代码]",
+      "notes": "适用于排查复杂业务逻辑或臃肿函数",
+      "updated_at": "2026-07-29 10:00:00"
+    },
+    {
+      "id": "2",
+      "title": "专业技术文档翻译 (英译中)",
+      "category": "翻译润色",
+      "tags": "翻译, 技术文档",
+      "prompt": "请将以下英文技术文档翻译为地道的中文。要求：\n1. 保持专业术语准确（如 Repository, Decorator, Dependency Injection 等）；\n2. 语句通顺，符合中文阅读习惯；\n3. 保留原有的 Markdown 格式。\n\n[粘贴英文内容]",
+      "notes": "适合翻译 GitHub Readme 或 API 文档",
+      "updated_at": "2026-07-29 11:30:00"
+    }
+  ]
+}

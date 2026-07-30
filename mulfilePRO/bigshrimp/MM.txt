@@ -1,0 +1,156 @@
+PyLauncher/
+│
+├── main.py                          # 程序总入口：组装模块、启动 UI、注册事件
+├── requirements.txt
+├── config.json                      # 全局默认配置（也可迁到 shared/config）
+├── pyproject.toml                   # 可选
+│
+├── modules/                         # ★ 业务模块（模块化单体的核心）
+│   │
+│   ├── agent/                       # 【原 model/agent + controller/agent + service/ai 主体】
+│   │   ├── api.py                   # 对外：run_task / cancel / 流式回调注册
+│   │   ├── domain/                  # Clean 内层：会话、计划、Tool 调用语义
+│   │   │   ├── session.py           # ← session_model
+│   │   │   ├── prompt_template.py   # ← prompt_template_model
+│   │   │   ├── message.py
+│   │   │   ├── plan.py
+│   │   │   └── rules.py
+│   │   ├── application/             # 用例编排
+│   │   │   ├── run_agent.py         # ← agent_controller 中的编排逻辑
+│   │   │   ├── handle_user_message.py
+│   │   │   └── stream_reply.py
+│   │   ├── features/                # 可选：再按功能竖切
+│   │   │   ├── plan_task/
+│   │   │   └── execute_tool_step/
+│   │   ├── ports.py                 # LlmPort / ToolPort / MemoryPort …
+│   │   └── infrastructure/          # Clean 外层
+│   │       ├── llm/
+│   │       │   ├── openclaw_gateway.py   # ← openclaw_gateway
+│   │       │   └── providers/
+│   │       ├── prompt_engine.py          # ← prompt_engine
+│   │       └── persistence/
+│   │           └── session_store.py      # 会话落盘（原 model 持久化职责）
+│   │
+│   ├── bridge/                      # 【原 service/ai/bridge_service 独立成模块】
+│   │   ├── api.py                   # send_action / on_event / connection_status
+│   │   ├── domain/
+│   │   │   ├── message.py
+│   │   │   ├── session.py
+│   │   │   └── actions.py
+│   │   ├── application/
+│   │   │   ├── dispatch_request.py
+│   │   │   └── handle_plugin_event.py
+│   │   ├── ports.py
+│   │   └── infrastructure/
+│   │       ├── websocket_server.py  # ← QWebSocketServer 桥接
+│   │       ├── native_messaging/    # 若后续加 Chrome Native Host
+│   │       └── json_codec.py
+│   │
+│   ├── workspace/                   # 【原 model/project + project/editor controller + storage】
+│   │   ├── api.py                   # open_project / read_file / write_file / scaffold…
+│   │   ├── domain/
+│   │   │   ├── project.py           # ← project_model 中的领域部分
+│   │   │   ├── tab_state.py         # ← tab_model（打开文档状态）
+│   │   │   ├── path_rules.py
+│   │   │   ├── arch_tree.py         # 架构树（生成目录用）
+│   │   │   └── scaffold_plan.py
+│   │   ├── application/
+│   │   │   ├── open_project.py      # ← project_controller 调度逻辑
+│   │   │   ├── file_io.py
+│   │   │   └── scaffold_from_text.py
+│   │   ├── features/
+│   │   │   ├── parse_architecture_text/
+│   │   │   ├── plan_scaffold/
+│   │   │   ├── apply_scaffold/
+│   │   │   └── preview_scaffold/
+│   │   ├── ports.py                 # FileSystemPort …
+│   │   └── infrastructure/
+│   │       ├── file_io_service.py   # ← storage/file_io_service
+│   │       ├── local_fs.py
+│   │       └── templates/
+│   │
+│   ├── sandbox/                     # 【原 service/sandbox + runner_controller】
+│   │   ├── api.py                   # run / stop / subscribe_logs
+│   │   ├── domain/
+│   │   │   ├── job.py
+│   │   │   └── heal_policy.py
+│   │   ├── application/
+│   │   │   ├── execute.py           # ← runner_controller + executor
+│   │   │   └── self_heal.py         # ← self_heal_service 编排
+│   │   ├── ports.py
+│   │   └── infrastructure/
+│   │       ├── executor_service.py  # ← QProcess 封装
+│   │       └── self_heal_service.py
+│   │
+│   ├── analysis/                    # 【原 service/analysis】
+│   │   ├── api.py                   # scan / outline / inspect_db
+│   │   ├── domain/
+│   │   │   ├── symbol.py
+│   │   │   └── schema_info.py
+│   │   ├── application/
+│   │   │   ├── scan_entry.py
+│   │   │   ├── extract_outline.py
+│   │   │   └── inspect_database.py
+│   │   ├── ports.py
+│   │   └── infrastructure/
+│   │       ├── scanner_service.py
+│   │       ├── analyzer_service.py
+│   │       └── db_inspector.py
+│   │
+│   ├── security/                    # 【原 approval_dialog 背后的规则 + 可扩展】
+│   │   ├── api.py                   # check / request_approval / audit
+│   │   ├── domain/
+│   │   │   ├── permission.py
+│   │   │   ├── approval.py
+│   │   │   └── policy.py
+│   │   ├── application/
+│   │   │   ├── authorize.py
+│   │   │   └── record_audit.py
+│   │   ├── ports.py
+│   │   └── infrastructure/
+│   │       ├── audit_log.py
+│   │       └── secret_store.py      # API Key 等敏感配置的安全侧
+│   │
+│   └── shell/                       # 【原 view/ + 部分 controller 的 UI 绑定】
+│       ├── api.py                   # 可选：供 main 启动主窗口
+│       ├── main_window.py           # ← view/main_window
+│       ├── components/
+│       │   ├── code_editor/
+│       │   ├── diff_viewer/
+│       │   └── terminal/
+│       ├── panels/
+│       │   ├── project_tree_panel.py
+│       │   ├── runner_panel.py
+│       │   └── agent_chat_panel.py
+│       ├── dialogs/
+│       │   ├── settings_dialog.py
+│       │   └── approval_dialog.py   # 只负责展示；是否批准走 security.api
+│       └── presenters/              # 薄适配：把模块 api 结果绑到控件（原 controller 的 UI 部分）
+│           ├── project_presenter.py
+│           ├── editor_presenter.py
+│           ├── runner_presenter.py
+│           └── agent_presenter.py
+│
+├── shared/                          # ★ 共享内核（真正跨模块、且要稳）
+│   ├── kernel/
+│   │   ├── result.py
+│   │   ├── errors.py
+│   │   └── ids.py
+│   ├── config/                      # 【原 model/config 上收或共享】
+│   │   ├── app_config.py            # ← app_config_model 的领域/读写抽象
+│   │   └── ai_config.py             # ← ai_config_model（密钥实体可只存引用，密文在 security）
+│   ├── events/                      # 跨模块事件类型定义
+│   │   ├── workspace_events.py
+│   │   ├── agent_events.py
+│   │   └── sandbox_events.py
+│   ├── infrastructure/
+│   │   ├── event_bus.py             # ← controller/handlers/event_bus
+│   │   ├── command_handler.py       # ← command_handler（全局命令可放这或 shell）
+│   │   └── qsettings_store.py       # QSettings 等技术实现
+│   └── base/
+│       └── observable.py            # ← base_model 中「信号/状态通知」的通用部分
+│
+└── resources/                       # 静态资源（可视为壳的附属）
+    ├── icons/
+    └── qss/
+        └── dark_style.qss

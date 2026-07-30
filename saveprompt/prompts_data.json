@@ -1,0 +1,65 @@
+{
+  "categories": [
+    "文本写作",
+    "编程协同",
+    "翻译润色",
+    "角色扮演",
+    "通用工具"
+  ],
+  "prompts": [
+    {
+      "id": "1785404980",
+      "title": "python文件浏览器描述2",
+      "category": "编程协同",
+      "tags": "",
+      "prompt": "你是一个专业的 Python / PySide2 桌面端开发专家。请为我设计并实现一个工业级的文件浏览控件组件 `FileBrowserWidget`。\n\n【详细架构要求】：\n1. 核心架构：\n   - 采用 MVC 模式，基于 QFileSystemModel 和 QTreeView 实现。\n   - 不阻塞主 UI 线程，利用 QFileSystemModel 的异步文件加载特性。\n\n2. UI 布局与外观：\n   - 采用 QVBoxLayout 主布局。\n   - 顶部地址栏：[上一级按钮] + [当前路径 LineEdit] + [刷新按钮] + [实时搜索/过滤 LineEdit]。\n   - 中间主体：QTreeView，默认只显示“名称”列（可配置是否显示大小/修改时间）。\n   - 默认所有节点展开，加载所有文件和文件夹。\n   - 支持设置自定义根目录（Root Path）。\n\n3. 交互与功能：\n   - 地址栏输入合法路径按回车可直接跳转；输入非法路径时保持原状并提示。\n   - 文件过滤：支持按扩展名（如 *.py, *.json, *.txt）动态过滤文件。\n   - 右键快捷菜单（QMenu）：包含“在系统文件管理器中打开”、“复制绝对路径”、“新建文件夹”、“删除”等常用右键菜单选项。\n   - 快捷拓展：支持开启/关闭文件拖拽（Drag & Drop）属性接口。\n\n4. 信号与接口暴露：\n   - `file_selected = Signal(str)`：单选文件事件\n   - `file_double_clicked = Signal(str)`：双击文件事件\n   - `dir_changed = Signal(str)`：当前浏览目录切换事件\n\n【交付物】：\n- 包含完整 imports 和逻辑的单一 Python 文件，使用 PySide2。\n- 代码必须遵循 Python 面向对象规范，方法职责单一，关键逻辑有注释。\n- 提供 `if __name__ == '__main__':` 运行测试代码，建立一个带有简单预览区域的主窗口展示该控件的信号联动。",
+      "notes": "",
+      "updated_at": "2026-07-30 18:02:23"
+    },
+    {
+      "id": "1785404898",
+      "title": "python文件浏览器描述",
+      "category": "文本写作",
+      "tags": "",
+      "prompt": "请帮我用 PySide2 编写一个独立且可复用的文件浏览控件（FileBrowserWidget），继承自 QWidget。\n\n【功能与组件要求】：\n1. 界面布局：\n   - 顶部导航栏：包含“返回上一级”按钮、路径输入框（QLineEdit，按回车跳转）、“刷新”按钮。\n   - 主体部分：使用 QTreeView 配合 QFileSystemModel 展示本地目录树。\n2. 数据与交互逻辑：\n   - 使用 QFileSystemModel 加载指定根目录，默认隐藏系统隐蔽文件，按文件名升序排列。\n   - 双击文件夹时，可进入该文件夹（并将顶部路径栏更新为最新路径）。\n   - 包含根路径设置方法 `set_root_path(path: str)`，在路径无效时做防错处理。\n\n\n\n",
+      "notes": "",
+      "updated_at": "2026-07-30 17:49:16"
+    },
+    {
+      "id": "1785397253",
+      "title": "python架构调整",
+      "category": "编程协同",
+      "tags": "",
+      "prompt": "根据上面的架构，将下面的代码实现到现在架构中。告诉我涉及哪些文件，给我这些文件的完整代码。同时要能通过main调试启动看到运行结果。",
+      "notes": "",
+      "updated_at": "2026-07-30 17:49:49"
+    },
+    {
+      "id": "1785393709",
+      "title": "程序界面描述",
+      "category": "编程协同",
+      "tags": "",
+      "prompt": "主界面大小为显示器的85%，居中显示。居中位置不包含底部工具栏。不要使用会压缩空白符的文本控件。 \n\n",
+      "notes": "",
+      "updated_at": "2026-07-30 17:47:59"
+    },
+    {
+      "id": "1",
+      "title": "Python 代码重构与架构分析",
+      "category": "编程协同",
+      "tags": "Python, 重构, 架构",
+      "prompt": "你是一个资深的 Python 架构师。请分析以下代码的逻辑缺陷、性能瓶颈以及架构不合理之处，并给出遵循 PEP 8 和模块化单体原则的重构建议：\n\n[在此粘贴代码]",
+      "notes": "适用于排查复杂业务逻辑或臃肿函数",
+      "updated_at": "2026-07-29 10:00:00"
+    },
+    {
+      "id": "2",
+      "title": "专业技术文档翻译 (英译中)",
+      "category": "翻译润色",
+      "tags": "翻译, 技术文档",
+      "prompt": "请将以下英文技术文档翻译为地道的中文。要求：\n1. 保持专业术语准确（如 Repository, Decorator, Dependency Injection 等）；\n2. 语句通顺，符合中文阅读习惯；\n3. 保留原有的 Markdown 格式。\n\n[粘贴英文内容]",
+      "notes": "适合翻译 GitHub Readme 或 API 文档",
+      "updated_at": "2026-07-29 11:30:00"
+    }
+  ]
+}
