@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-左右分栏：
-- 左侧：选项目文件夹
-- 右侧：项目内容浏览器（异步加载，默认展开全部节点）
+主界面使用 QTabWidget 充满窗口：
+- Tab 1: 项目选择 (ProjectPickerWidget)
+- Tab 2: 项目内容 (ProjectContentWidget)
 """
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import shutil
 import sys
 from typing import Iterable, List, Optional, Set
 
-from PySide2.QtCore import QDir, QModelIndex, QUrl, Qt, Signal
+from PySide2.QtCore import QDir, QModelIndex, QMimeData, QUrl, Qt, Signal
 from PySide2.QtGui import QDesktopServices, QGuiApplication
 from PySide2.QtWidgets import (
     QAbstractItemView,
@@ -25,8 +25,8 @@ from PySide2.QtWidgets import (
     QMenu,
     QMessageBox,
     QPushButton,
-    QSplitter,
     QStatusBar,
+    QTabWidget,
     QTreeView,
     QVBoxLayout,
     QWidget,
@@ -48,6 +48,7 @@ class ProjectContentWidget(QWidget):
         self._name_filters: List[str] = []
         self._expand_all_enabled = True
         self._pending_expand: Set[str] = set()
+        self._clipboard_mime: Optional[QMimeData] = None  # 保持对 QMimeData 的强引用
 
         self._build_ui()
         self._connect_signals()
@@ -85,11 +86,8 @@ class ProjectContentWidget(QWidget):
         layout.addLayout(bar)
 
         self.model = QFileSystemModel(self)
-        self.model.setFilter(
-            QDir.Filters(QDir.AllDirs | QDir.Files | QDir.NoDotAndDotDot)
-        )
+        self.model.setFilter(QDir.AllDirs | QDir.Files | QDir.NoDotAndDotDot)
         self.model.setNameFilterDisables(False)
-        # 目录异步加载完成后继续展开子节点
         self.model.directoryLoaded.connect(self._on_directory_loaded)
 
         self.tree = QTreeView(self)
@@ -102,13 +100,12 @@ class ProjectContentWidget(QWidget):
         self.tree.setUniformRowHeights(True)
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.setColumnWidth(0, 280)
-        # 展开时自动取子项，配合 directoryLoaded 拉全树
         self.tree.setItemsExpandable(True)
         self.tree.setExpandsOnDoubleClick(True)
         self._apply_visible_columns()
         layout.addWidget(self.tree, stretch=1)
 
-        self.empty_hint = QLabel("请在左侧选择一个项目文件夹")
+        self.empty_hint = QLabel("请在「项目选择」选项卡中选择一个项目文件夹")
         self.empty_hint.setAlignment(Qt.AlignCenter)
         self.empty_hint.setStyleSheet("color:#888; padding:24px;")
         layout.addWidget(self.empty_hint)
@@ -158,7 +155,6 @@ class ProjectContentWidget(QWidget):
         self.empty_hint.hide()
         self.tree.show()
 
-        # 默认展开全部：先展开根，再靠 directoryLoaded 递归展开
         if self._expand_all_enabled:
             self._pending_expand.clear()
             self._expand_index_recursive(root)
@@ -167,7 +163,6 @@ class ProjectContentWidget(QWidget):
         return True
 
     def _expand_index_recursive(self, index: QModelIndex) -> None:
-        """展开当前已加载节点，并触发子目录异步加载。"""
         if not index.isValid():
             return
         path = self.model.filePath(index)
@@ -175,7 +170,6 @@ class ProjectContentWidget(QWidget):
         if path:
             self._pending_expand.add(os.path.normpath(path))
 
-        # 对已有子节点继续展开；未加载的子目录会在 directoryLoaded 里再处理
         rows = self.model.rowCount(index)
         for row in range(rows):
             child = self.model.index(row, 0, index)
@@ -183,12 +177,8 @@ class ProjectContentWidget(QWidget):
                 self._expand_index_recursive(child)
 
     def _on_directory_loaded(self, path: str) -> None:
-        """某个目录加载完成后，展开它并继续展开其子目录。"""
-        if not self._expand_all_enabled:
+        if not self._expand_all_enabled or not path:
             return
-        if not path:
-            return
-        # 只处理当前项目树下的路径
         if self._current_path:
             try:
                 common = os.path.commonpath(
@@ -210,13 +200,11 @@ class ProjectContentWidget(QWidget):
             if child.isValid() and self.model.isDir(child):
                 child_path = self.model.filePath(child)
                 self.tree.expand(child)
-                # 访问 rowCount 会触发该子目录的异步加载
                 _ = self.model.rowCount(child)
                 if child_path:
                     self._pending_expand.add(os.path.normpath(child_path))
 
     def set_expand_all_enabled(self, enabled: bool) -> None:
-        """是否在设置根路径后自动展开全部节点。"""
         self._expand_all_enabled = enabled
 
     def current_path(self) -> str:
@@ -308,12 +296,29 @@ class ProjectContentWidget(QWidget):
         else:
             self.file_activated.emit(path)
 
+    # -----------------------------------------------------------------
+    # 剪贴板复制/粘贴核心逻辑
+    # -----------------------------------------------------------------
+    def _check_clipboard_has_urls(self) -> bool:
+        """安全地检测系统剪贴板是否有文件/URL，防止 C++ 对象已被销毁触发异常。"""
+        try:
+            mime = QApplication.clipboard().mimeData()
+            return mime.hasUrls() if mime else False
+        except RuntimeError:
+            return False
+
     def _on_context_menu(self, pos) -> None:
         index = self.tree.indexAt(pos)
         menu = QMenu(self)
 
         act_open = menu.addAction("在系统文件管理器中打开")
-        act_copy = menu.addAction("复制绝对路径")
+        act_copy_path = menu.addAction("复制绝对路径文本")
+        menu.addSeparator()
+
+        act_copy_item = menu.addAction("复制")
+        act_copy_all_files = menu.addAction("复制其下所有文件")
+        act_paste = menu.addAction("粘贴")
+
         menu.addSeparator()
         act_mkdir = menu.addAction("新建文件夹")
         act_delete = menu.addAction("删除")
@@ -324,22 +329,113 @@ class ProjectContentWidget(QWidget):
         if index.isValid() and self.model.filePath(index) not in paths:
             paths = [self.model.filePath(index)]
 
+        has_folder = any(os.path.isdir(p) for p in paths)
+        has_clipboard_files = self._check_clipboard_has_urls()
+
         act_open.setEnabled(bool(paths) or bool(self._current_path))
-        act_copy.setEnabled(bool(paths))
+        act_copy_path.setEnabled(bool(paths))
+        act_copy_item.setEnabled(bool(paths))
+        act_copy_all_files.setEnabled(has_folder)
+        act_paste.setEnabled(has_clipboard_files and bool(self._current_path))
         act_delete.setEnabled(bool(paths))
         act_mkdir.setEnabled(bool(self._current_path))
 
         action = menu.exec_(self.tree.viewport().mapToGlobal(pos))
         if action is None:
             return
+
         if action == act_open:
             self._open_in_file_manager(paths)
-        elif action == act_copy:
-            self._copy_paths(paths)
+        elif action == act_copy_path:
+            self._copy_paths_text(paths)
+        elif action == act_copy_item:
+            self._copy_items_to_clipboard(paths)
+        elif action == act_copy_all_files:
+            self._copy_all_files_to_clipboard(paths)
+        elif action == act_paste:
+            target_dir = self._current_path
+            if index.isValid() and self.model.isDir(index):
+                target_dir = self.model.filePath(index)
+            self._paste_from_clipboard(target_dir)
         elif action == act_mkdir:
             self._mkdir()
         elif action == act_delete:
             self._delete_paths(paths)
+
+    def _copy_items_to_clipboard(self, paths: List[str]) -> None:
+        """复制选中的文件或文件夹节点到系统剪贴板。"""
+        if not paths:
+            return
+        self._clipboard_mime = QMimeData()
+        urls = [QUrl.fromLocalFile(p) for p in paths]
+        self._clipboard_mime.setUrls(urls)
+        QApplication.clipboard().setMimeData(self._clipboard_mime)
+
+    def _copy_all_files_to_clipboard(self, paths: List[str]) -> None:
+        """递归获取选中文件夹下的所有纯文件，放入剪贴板。"""
+        file_paths = []
+        for p in paths:
+            if os.path.isfile(p):
+                file_paths.append(p)
+            elif os.path.isdir(p):
+                for root_dir, _, files in os.walk(p):
+                    for file in files:
+                        file_paths.append(os.path.join(root_dir, file))
+
+        if not file_paths:
+            QMessageBox.information(self, "提示", "所选文件夹下没有可复制的文件。")
+            return
+
+        self._clipboard_mime = QMimeData()
+        urls = [QUrl.fromLocalFile(p) for p in file_paths]
+        self._clipboard_mime.setUrls(urls)
+        QApplication.clipboard().setMimeData(self._clipboard_mime)
+
+    def _paste_from_clipboard(self, target_dir: str) -> None:
+        """从剪贴板粘贴文件或文件夹到指定目录。"""
+        try:
+            mime_data = QApplication.clipboard().mimeData()
+            if not mime_data or not mime_data.hasUrls():
+                return
+            urls = mime_data.urls()
+        except RuntimeError:
+            return
+
+        src_paths = [url.toLocalFile() for url in urls if url.isLocalFile()]
+
+        errors = []
+        for src in src_paths:
+            if not os.path.exists(src):
+                continue
+
+            base_name = os.path.basename(src.rstrip(os.sep))
+            dest = os.path.join(target_dir, base_name)
+            dest = self._get_unique_dest_path(dest)
+
+            try:
+                if os.path.isdir(src):
+                    shutil.copytree(src, dest)
+                else:
+                    shutil.copy2(src, dest)
+            except Exception as e:
+                errors.append(f"{src}: {e}")
+
+        self.refresh()
+        if errors:
+            QMessageBox.warning(self, "部分粘贴失败", "\n".join(errors))
+
+    @staticmethod
+    def _get_unique_dest_path(dest: str) -> str:
+        """防止同名覆盖，自动计算并生成形如 xxx_copy.ext 的新文件名。"""
+        if not os.path.exists(dest):
+            return dest
+        base, ext = os.path.splitext(dest)
+        count = 1
+        new_dest = f"{base}_copy{ext}"
+        while os.path.exists(new_dest):
+            new_dest = f"{base}_copy{count}{ext}"
+            count += 1
+        return new_dest
 
     def _open_in_file_manager(self, paths: List[str]) -> None:
         target = paths[0] if paths else self._current_path
@@ -349,7 +445,7 @@ class ProjectContentWidget(QWidget):
             target = os.path.dirname(target)
         QDesktopServices.openUrl(QUrl.fromLocalFile(target))
 
-    def _copy_paths(self, paths: List[str]) -> None:
+    def _copy_paths_text(self, paths: List[str]) -> None:
         if not paths:
             return
         QApplication.clipboard().setText("\n".join(paths))
@@ -430,7 +526,7 @@ class ProjectPickerWidget(QWidget):
         layout.addWidget(self.btn_use)
 
         self.model = QFileSystemModel(self)
-        self.model.setFilter(QDir.Filters(QDir.AllDirs | QDir.NoDotAndDotDot))
+        self.model.setFilter(QDir.AllDirs | QDir.NoDotAndDotDot)
         self.tree = QTreeView()
         self.tree.setModel(self.model)
         self.tree.setSortingEnabled(True)
@@ -493,7 +589,7 @@ class ProjectPickerWidget(QWidget):
 
 
 # =====================================================================
-# 主窗口
+# 主窗口（已更新为 Tab 选项卡布局）
 # =====================================================================
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -501,23 +597,22 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("项目文件浏览器")
         self._place_window()
 
-        splitter = QSplitter(Qt.Horizontal)
+        # 创建 QTabWidget，并将其设置为 CentralWidget 充满主界面
+        self.tabs = QTabWidget(self)
 
         self.picker = ProjectPickerWidget()
         self.content = ProjectContentWidget()
-        # 默认已开启“展开全部”；若要关闭：
-        # self.content.set_expand_all_enabled(False)
 
-        splitter.addWidget(self.picker)
-        splitter.addWidget(self.content)
-        splitter.setStretchFactor(0, 1)
-        splitter.setStretchFactor(1, 2)
-        splitter.setSizes([360, 720])
+        # 添加两个选项卡
+        self.tabs.addTab(self.picker, "📁 项目选择")
+        self.tabs.addTab(self.content, "📄 项目内容")
 
-        self.setCentralWidget(splitter)
+        # 将 Tab 控件直接设置为主界面的 CentralWidget，占据整个窗口区域
+        self.setCentralWidget(self.tabs)
+
         self.setStatusBar(QStatusBar())
         self.statusBar().showMessage(
-            "在左侧进入项目目录，点击「将当前文件夹设为项目」"
+            "在「项目选择」中选择文件夹，然后设定为项目"
         )
 
         self.picker.project_selected.connect(self._on_project_selected)
@@ -543,6 +638,8 @@ class MainWindow(QMainWindow):
     def _on_project_selected(self, path: str) -> None:
         if self.content.set_root_path(path):
             self.statusBar().showMessage(f"已打开项目: {path}")
+            # 选择项目成功后，自动切换到“项目内容”选项卡 (索引 1)
+            self.tabs.setCurrentIndex(1)
 
 
 def main() -> None:
