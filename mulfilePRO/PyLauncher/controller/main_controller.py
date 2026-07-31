@@ -1,107 +1,215 @@
-# -*- coding: utf-8 -*-
-
 import os
-from PySide2.QtWidgets import QFileDialog, QMessageBox
-from PySide2.QtCore import QSettings
+import ast
+import sys
+import shlex
+import subprocess
+from PySide2.QtCore import QSettings, QByteArray
+from PySide2.QtWidgets import QFileDialog
 
-from model.project_model import ProjectModel
-from service.scanner_service import ScannerService
-from service.executor_service import ExecutorService
-
-from view.main_window import MainWindow
-from controller.editor_controller import EditorController
 
 class MainController:
-    """全局总控制器：管理 MVC 架构数据与事件流向"""
+    """主控制器：处理信号联动、QSettings 全局持久化与多进程直接一键启动"""
 
-    def __init__(self):
-        self.model = ProjectModel()
-        self.scanner_service = ScannerService()
-        self.executor_service = ExecutorService()
-        self.view = MainWindow()
-        self.editor_controller = EditorController(self.view.editor_view)
+    def __init__(self, main_window):
+        self.main_window = main_window
+        self.project_tree = main_window.project_tree
+        self.runner_view = main_window.runner_view
+        self.editor_view = main_window.editor_view
 
-        # 初始化本地持久化配置
-        self.settings = QSettings("PyLauncher", "ProjectState")
+        self.settings = QSettings("PyLauncherOrg", "PyLauncherIDE")
+        self._current_project_dir = ""
 
-        self._init_global_connections()
-        
-        # 恢复上次打开的项目目录
-        self._restore_last_session()
+        self._bind_signals()
+        self.restore_settings()
 
-    def show(self):
-        """显示主窗口界面"""
-        self.view.show()
+    def _bind_signals(self):
+        """绑定所有视图与控制逻辑"""
+        # 1. 打开项目目录
+        self.main_window.open_dir_requested.connect(self.on_open_directory)
 
-    def _init_global_connections(self):
-        self.view.open_dir_requested.connect(self.handle_open_directory)
-        self.model.project_path_changed.connect(lambda path: self.view.status_bar.showMessage(f"当前项目: {path}"))
-        self.model.project_scanned.connect(lambda files, mains: self.view.runner_view.set_candidates(mains))
+        # 2. 文件树【单击】py文件 -> 自动传递给运行入口脚本框
+        self.project_tree.file_selected.connect(self.on_file_selected)
 
-        self.view.project_tree.file_selected.connect(self.handle_file_selected)
-        self.view.project_tree.file_double_clicked.connect(self.handle_file_double_clicked)
-        
-        self.view.runner_view.run_clicked.connect(self.handle_run_script)
-        self.view.runner_view.stop_clicked.connect(self.executor_service.stop_script)
-        self.executor_service.stdout_received.connect(self.view.console_view.append_log)
-        self.executor_service.process_finished.connect(
-            lambda code: self.view.console_view.append_log(f"\n[INFO] 进程运行结束，退出码: {code}\n")
+        # 3. 文件树【双击】py文件 -> 打开源码编辑器
+        self.project_tree.file_double_clicked.connect(self.on_file_double_clicked)
+
+        # 4. 源码编辑器保存与运行
+        self.editor_view.save_requested.connect(self.on_save_source)
+        self.editor_view.run_requested.connect(self.on_run_from_editor)
+
+        # 5. 一键直接启动程序
+        self.runner_view.run_requested.connect(self.on_run_script_direct)
+
+        # 6. 主窗口关闭持久化
+        self.main_window.window_closing.connect(self.save_settings)
+
+    def on_file_selected(self, file_path: str):
+        """文件树单击 .py 文件：自动将路径传递给运行入口"""
+        if file_path.endswith(".py"):
+            self.runner_view.set_script_path(file_path)
+            self.main_window.show_status_message(f"已选中运行脚本: {file_path}", 2000)
+
+    def on_open_directory(self):
+        dir_path = QFileDialog.getExistingDirectory(
+            self.main_window, 
+            "选择项目目录", 
+            self._current_project_dir or os.path.expanduser("~")
         )
-
-    def _restore_last_session(self):
-        """从 QSettings 中恢复上一次保存的项目目录"""
-        last_dir = self.settings.value("last_project_dir", "")
-        if last_dir and os.path.exists(str(last_dir)):
-            self._load_project_directory(str(last_dir))
-
-    def handle_open_directory(self):
-        dir_path = QFileDialog.getExistingDirectory(self.view, "选择 Python 项目根目录")
         if dir_path:
-            self._load_project_directory(dir_path)
+            self._load_project_dir(dir_path)
 
-    def _load_project_directory(self, dir_path):
-        """加载项目目录并持久化存储路径"""
-        self.settings.setValue("last_project_dir", dir_path)
-        self.model.current_project_dir = dir_path
-        scan_result = self.scanner_service.scan_directory(dir_path)
-        self.model.set_scan_results(scan_result["files"], scan_result["mains"])
-        self.view.project_tree.load_directory(dir_path)
+    def _load_project_dir(self, dir_path: str):
+        self._current_project_dir = dir_path
+        self.project_tree.load_directory(dir_path)
+        self.project_tree.scan_line_counts()
+        self.main_window.show_status_message(f"已打开项目: {dir_path}", 3000)
 
-    def handle_file_selected(self, file_path):
-        if file_path.endswith('.py'):
-            project_dir = self.model.current_project_dir
-            if project_dir and file_path.startswith(project_dir):
-                rel_path = os.path.relpath(file_path, project_dir)
-                self.view.runner_view.set_current_target(rel_path)
-
-    def handle_file_double_clicked(self, file_path):
-        self.view.right_tabs.setUpdatesEnabled(False)
-        self.editor_controller.open_file(file_path)
-        self.view.right_tabs.setCurrentIndex(1)
-        self.view.right_tabs.setUpdatesEnabled(True)
-
-    def handle_run_script(self, target, args_str):
-        if not target:
-            QMessageBox.warning(self.view, "提示", "请选择或输入要运行的 Python 文件！")
+    def on_file_double_clicked(self, file_path: str):
+        if not os.path.exists(file_path):
             return
 
-        project_dir = self.model.current_project_dir
-        if project_dir:
-            full_script_path = os.path.join(project_dir, target)
-            working_dir = project_dir
-        else:
-            full_script_path = target
-            working_dir = os.path.dirname(target)
+        try:
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
 
-        if not os.path.exists(full_script_path):
-            QMessageBox.critical(self.view, "错误", f"找不到运行目标: {full_script_path}")
+            self.editor_view.update_editor_content(file_path, content)
+            symbols = self._parse_outline(content)
+            self.editor_view.update_outline(symbols)
+
+            self.main_window.right_tabs.setCurrentIndex(1)
+            self.main_window.show_status_message(f"已打开文件: {file_path}", 2000)
+
+        except Exception as e:
+            self.main_window.show_status_message(f"读取文件失败: {str(e)}", 4000)
+
+    def on_save_source(self, content: str):
+        file_path = self.editor_view.get_current_file_path()
+        if not file_path:
+            self.main_window.show_status_message("保存失败：当前未打开文件", 3000)
             return
 
-        args_list = args_str.split() if args_str else []
+        try:
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(content)
 
-        self.view.right_tabs.setUpdatesEnabled(False)
-        self.view.right_tabs.setCurrentIndex(0)
-        self.view.console_view.append_log(f"{'='*50}\n[INFO] 正在启动: python3 {target} {' '.join(args_list)}\n")
-        self.view.right_tabs.setUpdatesEnabled(True)
+            self.editor_view.btn_save.setEnabled(False)
+            symbols = self._parse_outline(content)
+            self.editor_view.update_outline(symbols)
+            self.project_tree.scan_line_counts()
 
-        self.executor_service.start_script(full_script_path, working_dir=working_dir, args=args_list)
+            self.main_window.show_status_message(f"保存成功：{file_path}", 3000)
+
+        except Exception as e:
+            self.main_window.show_status_message(f"保存失败：{str(e)}", 5000)
+
+    def on_run_from_editor(self):
+        """处理从源码编辑器点击▶运行的请求：若有未保存修改则先自动保存，然后启动"""
+        file_path = self.editor_view.get_current_file_path()
+        if not file_path or not os.path.exists(file_path):
+            self.main_window.show_status_message("运行失败：当前未打开有效文件！", 3000)
+            return
+
+        # 如果编辑器处于待保存状态，运行前先自动写盘
+        if self.editor_view.btn_save.isEnabled():
+            self.on_save_source(self.editor_view.editor.toPlainText())
+
+        # 读取 RunnerView 的全局运行配置
+        runner_config = self.runner_view.get_config()
+        run_config = {
+            "interpreter": runner_config.get("interpreter") or sys.executable,
+            "script_path": file_path,
+            "args": runner_config.get("args", ""),
+            "work_dir": os.path.dirname(os.path.abspath(file_path))
+        }
+
+        # 调用拉起进程的统一逻辑
+        self.on_run_script_direct(run_config)
+
+    def on_run_script_direct(self, config: dict):
+        """一键直接启动程序：后台创建独立子进程，支持多开"""
+        script_path = config.get("script_path")
+        interpreter = config.get("interpreter") or sys.executable
+        args_str = config.get("args", "")
+        work_dir = config.get("work_dir") or (os.path.dirname(script_path) if script_path else os.getcwd())
+
+        if not script_path or not os.path.exists(script_path):
+            self.main_window.show_status_message("运行失败：指定的脚本文件不存在！", 4000)
+            return
+
+        cmd = [interpreter, "-u", script_path]
+        if args_str:
+            cmd.extend(shlex.split(args_str))
+
+        try:
+            subprocess.Popen(
+                cmd,
+                cwd=work_dir,
+                stdout=None,
+                stderr=None,
+                stdin=None,
+                start_new_session=True
+            )
+
+            script_name = os.path.basename(script_path)
+            self.main_window.show_status_message(f"🚀 已成功启动程序: {script_name}", 3000)
+
+        except Exception as e:
+            self.main_window.show_status_message(f"启动失败: {str(e)}", 5000)
+
+    def _parse_outline(self, code_str: str):
+        symbols = []
+        try:
+            tree = ast.parse(code_str)
+            for node in ast.iter_child_nodes(tree):
+                if isinstance(node, ast.ClassDef):
+                    symbols.append({"type": "class", "name": node.name, "lineno": node.lineno})
+                elif isinstance(node, ast.FunctionDef):
+                    symbols.append({"type": "function", "name": node.name, "lineno": node.lineno})
+        except Exception:
+            pass
+        return symbols
+
+    # ================= Persistence 持久化逻辑 =================
+
+    def save_settings(self):
+        """将全程序所有控件状态持久化写入 QSettings"""
+        self.settings.setValue("geometry", self.main_window.saveGeometry())
+        self.settings.setValue("windowState", self.main_window.saveState())
+        self.settings.setValue("main_splitter", self.main_window.main_splitter.saveState())
+        self.settings.setValue("editor_splitter", self.editor_view.splitter.saveState())
+        self.settings.setValue("current_tab", self.main_window.right_tabs.currentIndex())
+        self.settings.setValue("project_dir", self._current_project_dir)
+
+        runner_config = self.runner_view.get_config()
+        for k, v in runner_config.items():
+            self.settings.setValue(f"runner_{k}", v)
+
+    def restore_settings(self):
+        """从 QSettings 恢复控件状态"""
+        geometry = self.settings.value("geometry")
+        if isinstance(geometry, QByteArray):
+            self.main_window.restoreGeometry(geometry)
+
+        main_splitter = self.settings.value("main_splitter")
+        if isinstance(main_splitter, QByteArray):
+            self.main_window.main_splitter.restoreState(main_splitter)
+
+        editor_splitter = self.settings.value("editor_splitter")
+        if isinstance(editor_splitter, QByteArray):
+            self.editor_view.splitter.restoreState(editor_splitter)
+
+        current_tab = self.settings.value("current_tab", type=int)
+        if current_tab:
+            self.main_window.right_tabs.setCurrentIndex(current_tab)
+
+        saved_dir = self.settings.value("project_dir", type=str)
+        if saved_dir and os.path.exists(saved_dir):
+            self._load_project_dir(saved_dir)
+
+        runner_config = {
+            "interpreter": self.settings.value("runner_interpreter", type=str),
+            "script_path": self.settings.value("runner_script_path", type=str),
+            "args": self.settings.value("runner_args", type=str),
+            "work_dir": self.settings.value("runner_work_dir", type=str),
+        }
+        self.runner_view.set_config(runner_config)

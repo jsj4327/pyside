@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
 """
 核心UI组件模块：
-- FileColorDelegate: 自定义 Delegate，用于根据文件大小渲染绿/红背景色
-- ProjectPickerWidget: 项目选择器 Widget
-- ProjectContentWidget: 项目内容浏览器及架构文本生成器 Widget
+- FileColorDelegate
+- ProjectPickerWidget
+- ProjectContentWidget
 """
 from __future__ import annotations
 
 import os
-import shutil
 from typing import List, Optional
 
 from PySide2.QtCore import QDir, QModelIndex, QMimeData, QUrl, Qt, Signal
@@ -18,7 +16,6 @@ from PySide2.QtWidgets import (
     QApplication,
     QFileSystemModel,
     QHBoxLayout,
-    QInputDialog,
     QLabel,
     QLineEdit,
     QMenu,
@@ -35,8 +32,6 @@ from PySide2.QtWidgets import (
 
 
 class FileColorDelegate(QStyledItemDelegate):
-    """自定义绘制 Delegate，支持按文件是否为空标记背景色（空文件绿，非空文件红）"""
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self.check_enabled = False
@@ -45,7 +40,6 @@ class FileColorDelegate(QStyledItemDelegate):
         super().initStyleOption(option, index)
         if not self.check_enabled or not index.isValid():
             return
-
         model = index.model()
         if isinstance(model, QFileSystemModel):
             file_path = model.filePath(index)
@@ -61,8 +55,6 @@ class FileColorDelegate(QStyledItemDelegate):
 
 
 class ProjectPickerWidget(QWidget):
-    """左侧：选项目目录组件"""
-
     project_selected = Signal(str)
 
     def __init__(self, parent=None):
@@ -85,11 +77,13 @@ class ProjectPickerWidget(QWidget):
 
         self.btn_use = QPushButton("将当前文件夹设为项目 →")
         self.btn_use.setFixedHeight(32)
-        self.btn_use.setStyleSheet("font-weight:bold; background:#2196F3; color:white;")
+        self.btn_use.setStyleSheet(
+            "font-weight:bold; background:#2196F3; color:white;"
+        )
         layout.addWidget(self.btn_use)
 
         self.model = QFileSystemModel(self)
-        self.model.setFilter(QDir.AllDirs | QDir.NoDotAndDotDot)
+        self.model.setFilter(QDir.Filters(QDir.AllDirs | QDir.NoDotAndDotDot))
         self.tree = QTreeView()
         self.tree.setModel(self.model)
         self.tree.setSortingEnabled(True)
@@ -107,7 +101,7 @@ class ProjectPickerWidget(QWidget):
         self.set_path(os.getcwd())
 
     def set_path(self, path: str) -> bool:
-        path = os.path.abspath(os.path.expanduser(path.strip())) if hasattr(os, "expanduser") else os.path.abspath(path.strip())
+        path = os.path.abspath(os.path.expanduser(path.strip()))
         if not os.path.isdir(path):
             QMessageBox.warning(self, "路径无效", f"不是有效目录：\n{path}")
             self.path_edit.setText(self._path)
@@ -152,17 +146,15 @@ class ProjectPickerWidget(QWidget):
 
 
 class ProjectContentWidget(QWidget):
-    """项目内容浏览器组件"""
-
     path_changed = Signal(str)
     file_activated = Signal(str)
-    request_batch_copy = Signal(str)  # 发送请求将目标路径传送至分批复制界面
+    request_batch_copy = Signal(str)
+    request_one_click_merge = Signal(list)  # 发送多选文件夹列表以执行一键合并
 
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self._current_path = ""
         self._clipboard_mime: Optional[QMimeData] = None
-
         self._build_ui()
         self._connect_signals()
 
@@ -173,34 +165,41 @@ class ProjectContentWidget(QWidget):
 
         bar = QHBoxLayout()
         bar.setSpacing(6)
-
         self.btn_up = QPushButton("上一级")
         self.btn_up.setFixedHeight(28)
         self.btn_up.setEnabled(False)
-
         self.path_edit = QLineEdit()
         self.path_edit.setPlaceholderText("当前路径，回车跳转…")
         self.path_edit.setClearButtonEnabled(True)
-
         self.btn_refresh = QPushButton("刷新")
         self.btn_refresh.setFixedHeight(28)
 
-        self.filter_edit = QLineEdit()
-        self.filter_edit.setPlaceholderText("过滤 如 *.py;*.json;*.txt")
-        self.filter_edit.setClearButtonEnabled(True)
-        self.filter_edit.setFixedWidth(200)
+        # 1. 改为“后缀名”与“关键字”独立过滤输入框
+        self.ext_filter_edit = QLineEdit()
+        self.ext_filter_edit.setPlaceholderText("后缀名 如 .py .txt")
+        self.ext_filter_edit.setClearButtonEnabled(True)
+        self.ext_filter_edit.setFixedWidth(130)
+
+        self.kw_filter_edit = QLineEdit()
+        self.kw_filter_edit.setPlaceholderText("关键字 如 main")
+        self.kw_filter_edit.setClearButtonEnabled(True)
+        self.kw_filter_edit.setFixedWidth(130)
 
         bar.addWidget(self.btn_up)
         bar.addWidget(self.path_edit, stretch=1)
         bar.addWidget(self.btn_refresh)
-        bar.addWidget(QLabel("过滤:"))
-        bar.addWidget(self.filter_edit)
+        bar.addWidget(QLabel("后缀名:"))
+        bar.addWidget(self.ext_filter_edit)
+        bar.addWidget(QLabel("关键字:"))
+        bar.addWidget(self.kw_filter_edit)
         main_layout.addLayout(bar)
 
         self.splitter = QSplitter(Qt.Horizontal)
 
         self.model = QFileSystemModel(self)
-        self.model.setFilter(QDir.AllDirs | QDir.Files | QDir.NoDotAndDotDot)
+        self.model.setFilter(
+            QDir.Filters(QDir.AllDirs | QDir.Files | QDir.NoDotAndDotDot)
+        )
         self.model.setNameFilterDisables(False)
         self.model.directoryLoaded.connect(self._on_directory_loaded)
 
@@ -214,10 +213,8 @@ class ProjectContentWidget(QWidget):
         self.tree.setUniformRowHeights(True)
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.setColumnWidth(0, 280)
-
         self.delegate = FileColorDelegate(self.tree)
         self.tree.setItemDelegate(self.delegate)
-
         self.splitter.addWidget(self.tree)
 
         self.text_view = QPlainTextEdit(self)
@@ -226,19 +223,18 @@ class ProjectContentWidget(QWidget):
         font = QFont("Consolas", 10)
         font.setStyleHint(QFont.Monospace)
         self.text_view.setFont(font)
-        self.text_view.setPlaceholderText("项目的架构树图与所有文件绝对路径将在此处生成…")
+        self.text_view.setPlaceholderText(
+            "项目的架构树图与所有文件绝对路径将在此处生成…"
+        )
         self.text_view.hide()
-
         self.splitter.addWidget(self.text_view)
         main_layout.addWidget(self.splitter, stretch=1)
 
         bot_bar = QHBoxLayout()
         self.btn_check_empty = QPushButton("🔍 检测空白文件并标记颜色")
         self.btn_check_empty.setFixedHeight(30)
-
         self.btn_show_architecture = QPushButton("📋 生成/显示项目架构文本")
         self.btn_show_architecture.setFixedHeight(30)
-
         bot_bar.addWidget(self.btn_check_empty)
         bot_bar.addWidget(self.btn_show_architecture)
         main_layout.addLayout(bot_bar)
@@ -247,15 +243,17 @@ class ProjectContentWidget(QWidget):
         self.empty_hint.setAlignment(Qt.AlignCenter)
         self.empty_hint.setStyleSheet("color:#888; padding:24px;")
         main_layout.addWidget(self.empty_hint)
-
         self.splitter.hide()
 
     def _connect_signals(self) -> None:
         self.btn_up.clicked.connect(self._go_up)
         self.btn_refresh.clicked.connect(self.refresh)
         self.path_edit.returnPressed.connect(self._on_path_entered)
-        self.filter_edit.textChanged.connect(self._on_filter_changed)
-        self.filter_edit.returnPressed.connect(self._on_filter_changed)
+
+        # 过滤框信号绑定
+        self.ext_filter_edit.textChanged.connect(self._on_filter_changed)
+        self.kw_filter_edit.textChanged.connect(self._on_filter_changed)
+
         self.tree.doubleClicked.connect(self._on_double_clicked)
         self.tree.customContextMenuRequested.connect(self._on_context_menu)
         self.btn_check_empty.clicked.connect(self._check_empty_files)
@@ -266,14 +264,12 @@ class ProjectContentWidget(QWidget):
             if not silent:
                 QMessageBox.warning(self, "路径无效", "路径不能为空。")
             return False
-
         path = os.path.abspath(os.path.expanduser(str(path).strip()))
         if not os.path.isdir(path) or not os.access(path, os.R_OK):
             if not silent:
                 QMessageBox.warning(self, "路径无效", f"不是可读目录：\n{path}")
             self.path_edit.setText(self._current_path)
             return False
-
         root = self.model.setRootPath(path)
         if not root.isValid():
             root = self.model.index(path)
@@ -282,7 +278,6 @@ class ProjectContentWidget(QWidget):
                 QMessageBox.warning(self, "路径无效", f"无法打开：\n{path}")
             self.path_edit.setText(self._current_path)
             return False
-
         self.tree.setRootIndex(root)
         self._current_path = path
         self.path_edit.setText(path)
@@ -291,7 +286,6 @@ class ProjectContentWidget(QWidget):
         self.splitter.show()
         self.text_view.hide()
         self.tree.expandAll()
-
         self.path_changed.emit(path)
         return True
 
@@ -299,9 +293,8 @@ class ProjectContentWidget(QWidget):
         self.tree.expandAll()
 
     def refresh(self) -> None:
-        if not self._current_path:
-            return
-        self.set_root_path(self._current_path, silent=True)
+        if self._current_path:
+            self.set_root_path(self._current_path, silent=True)
 
     def _on_show_architecture_clicked(self) -> None:
         if not self._current_path:
@@ -314,7 +307,6 @@ class ProjectContentWidget(QWidget):
         if not self._current_path or not os.path.isdir(self._current_path):
             self.text_view.clear()
             return
-
         lines = [f"项目根目录: {self._current_path}\n", "=" * 60, "【目录结构树】"]
 
         def _build_tree(dir_path: str, prefix: str = ""):
@@ -334,14 +326,11 @@ class ProjectContentWidget(QWidget):
                     _build_tree(full_path, new_prefix)
 
         _build_tree(self._current_path)
-
         lines.append("\n" + "=" * 60)
         lines.append("【所有文件绝对路径列表】")
-
         for root_dir, _, files in os.walk(self._current_path):
             for file in sorted(files):
                 lines.append(os.path.join(root_dir, file))
-
         self.text_view.setPlainText("\n".join(lines))
 
     def _check_empty_files(self) -> None:
@@ -360,15 +349,16 @@ class ProjectContentWidget(QWidget):
     def _on_context_menu(self, pos) -> None:
         index = self.tree.indexAt(pos)
         menu = QMenu(self)
-
         act_open = menu.addAction("在系统文件管理器中打开")
         act_copy_path = menu.addAction("复制绝对路径文本")
         menu.addSeparator()
-
         act_copy_item = menu.addAction("复制")
         act_copy_all_files = menu.addAction("复制其下所有文件")
         act_copy_non_empty = menu.addAction("复制所有非空文件")
-        act_batch_copy = menu.addAction("⚡ 发送到分批复制选项卡")  # 新右键项
+        act_batch_copy = menu.addAction("⚡ 发送到分批复制选项卡")
+        
+        # 2. 新增“一键代码合并”右键菜单
+        act_one_click_merge = menu.addAction("🚀 一键代码合并")
 
         paths = self.selected_paths()
         if index.isValid() and index.column() != 0:
@@ -377,18 +367,21 @@ class ProjectContentWidget(QWidget):
             paths = [self.model.filePath(index)]
 
         has_folder = any(os.path.isdir(p) for p in paths)
+        selected_folders = [p for p in paths if os.path.isdir(p)]
 
         act_open.setEnabled(bool(paths) or bool(self._current_path))
         act_copy_path.setEnabled(bool(paths))
         act_copy_item.setEnabled(bool(paths))
         act_copy_all_files.setEnabled(has_folder)
         act_copy_non_empty.setEnabled(bool(paths))
-        act_batch_copy.setEnabled(bool(paths))
+        act_batch_copy.setEnabled(bool(paths) or bool(self._current_path))
+        
+        # 仅当选中文件夹时启用“一键代码合并”
+        act_one_click_merge.setEnabled(bool(selected_folders))
 
         action = menu.exec_(self.tree.viewport().mapToGlobal(pos))
         if action is None:
             return
-
         if action == act_open:
             self._open_in_file_manager(paths)
         elif action == act_copy_path:
@@ -404,6 +397,8 @@ class ProjectContentWidget(QWidget):
             if os.path.isfile(target_path):
                 target_path = os.path.dirname(target_path)
             self.request_batch_copy.emit(target_path)
+        elif action == act_one_click_merge:
+            self.request_one_click_merge.emit(selected_folders)
 
     def _copy_non_empty_files(self, paths: List[str]) -> None:
         non_empty_paths = []
@@ -416,23 +411,23 @@ class ProjectContentWidget(QWidget):
                         fp = os.path.join(root_dir, file)
                         if os.path.getsize(fp) > 0:
                             non_empty_paths.append(fp)
-
         if not non_empty_paths:
             QMessageBox.information(self, "提示", "未查找到任何非空文件。")
             return
-
         self._clipboard_mime = QMimeData()
-        urls = [QUrl.fromLocalFile(p) for p in non_empty_paths]
-        self._clipboard_mime.setUrls(urls)
+        self._clipboard_mime.setUrls(
+            [QUrl.fromLocalFile(p) for p in non_empty_paths]
+        )
         QApplication.clipboard().setMimeData(self._clipboard_mime)
-        QMessageBox.information(self, "已复制", f"已复制 {len(non_empty_paths)} 个非空文件。")
+        QMessageBox.information(
+            self, "已复制", f"已复制 {len(non_empty_paths)} 个非空文件。"
+        )
 
     def _copy_items_to_clipboard(self, paths: List[str]) -> None:
         if not paths:
             return
         self._clipboard_mime = QMimeData()
-        urls = [QUrl.fromLocalFile(p) for p in paths]
-        self._clipboard_mime.setUrls(urls)
+        self._clipboard_mime.setUrls([QUrl.fromLocalFile(p) for p in paths])
         QApplication.clipboard().setMimeData(self._clipboard_mime)
 
     def _copy_all_files_to_clipboard(self, paths: List[str]) -> None:
@@ -444,14 +439,11 @@ class ProjectContentWidget(QWidget):
                 for root_dir, _, files in os.walk(p):
                     for file in files:
                         file_paths.append(os.path.join(root_dir, file))
-
         if not file_paths:
             QMessageBox.information(self, "提示", "没有可复制的文件。")
             return
-
         self._clipboard_mime = QMimeData()
-        urls = [QUrl.fromLocalFile(p) for p in file_paths]
-        self._clipboard_mime.setUrls(urls)
+        self._clipboard_mime.setUrls([QUrl.fromLocalFile(p) for p in file_paths])
         QApplication.clipboard().setMimeData(self._clipboard_mime)
 
     def _open_in_file_manager(self, paths: List[str]) -> None:
@@ -463,9 +455,8 @@ class ProjectContentWidget(QWidget):
         QDesktopServices.openUrl(QUrl.fromLocalFile(target))
 
     def _copy_paths_text(self, paths: List[str]) -> None:
-        if not paths:
-            return
-        QApplication.clipboard().setText("\n".join(paths))
+        if paths:
+            QApplication.clipboard().setText("\n".join(paths))
 
     def _on_path_entered(self) -> None:
         text = self.path_edit.text().strip()
@@ -473,12 +464,36 @@ class ProjectContentWidget(QWidget):
             self.set_root_path(text)
 
     def _on_filter_changed(self) -> None:
-        raw = self.filter_edit.text().strip()
-        if not raw:
+        """根据后缀名和关键字构造通配符过滤规则"""
+        ext_raw = self.ext_filter_edit.text().strip()
+        kw_raw = self.kw_filter_edit.text().strip()
+
+        exts = []
+        if ext_raw:
+            for p in ext_raw.replace(";", " ").replace(",", " ").split():
+                p = p.strip()
+                if p:
+                    if not p.startswith("."):
+                        p = "." + p
+                    exts.append(p)
+
+        kw = kw_raw.strip()
+
+        if not exts and not kw:
             self.model.setNameFilters([])
             return
-        parts = [p.strip() for p in raw.replace(";", ",").split(",") if p.strip()]
-        self.model.setNameFilters(parts)
+
+        patterns = []
+        if exts and kw:
+            for e in exts:
+                patterns.append(f"*{kw}*{e}")
+        elif exts:
+            for e in exts:
+                patterns.append(f"*{e}")
+        elif kw:
+            patterns.append(f"*{kw}*")
+
+        self.model.setNameFilters(patterns)
 
     def _go_up(self) -> None:
         if not self._current_path:

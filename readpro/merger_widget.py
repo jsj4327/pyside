@@ -1,10 +1,6 @@
-# -*- coding: utf-8 -*-
-
-# -*- coding: utf-8 -*-
 """
 代码合并工具组件模块
-用于将多文件代码打包/合并为适合 AI (如 Gemini) 上下文读取的单/多个 txt 文件
-支持 Token / 文件大小分包，过滤代码注释，以及生成顶部项目结构树
+支持配置持久化、打开目标文件夹、一键合并导出
 """
 from __future__ import annotations
 
@@ -13,8 +9,10 @@ import os
 import re
 from typing import List, Optional, Set, Tuple
 
-from PySide2.QtCore import Qt
+from PySide2.QtCore import QMimeData, QSettings, QUrl, Qt
+from PySide2.QtGui import QDesktopServices
 from PySide2.QtWidgets import (
+    QApplication,
     QButtonGroup,
     QCheckBox,
     QFileDialog,
@@ -32,7 +30,6 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
-# 尝试导入 tiktoken 计算 token，若未安装则提供估算降级策略
 try:
     import tiktoken
 
@@ -42,24 +39,20 @@ except ImportError:
 
 
 def estimate_tokens(text: str) -> int:
-    """计算文本 Token 数：有 tiktoken 则用 cl100k_base，否则用粗略估算"""
     if TIKTOKEN_AVAILABLE:
         try:
             enc = tiktoken.get_encoding("cl100k_base")
             return len(enc.encode(text, disallowed_special=()))
         except Exception:
             pass
-    # 降级预估公式: 英文/符号 4 字符 ≈ 1 token，中文 1 字符 ≈ 1 token
     chinese_chars = len(re.findall(r"[\u4e00-\u9fa5]", text))
     other_chars = len(text) - chinese_chars
     return chinese_chars + (other_chars // 4)
 
 
 def strip_python_comments(code: str) -> str:
-    """对 Python 代码进行注释剔除 (保留核心代码结构)"""
     try:
         parsed = ast.parse(code)
-        # 移除 Docstrings
         for node in ast.walk(parsed):
             if isinstance(
                 node, (ast.FunctionDef, ast.ClassDef, ast.AsyncFunctionDef, ast.Module)
@@ -67,60 +60,59 @@ def strip_python_comments(code: str) -> str:
                 if (
                     node.body
                     and isinstance(node.body[0], ast.Expr)
-                    and isinstance(node.body[0].value, ast.Str)
+                    and isinstance(node.body[0].value, (ast.Str, ast.Constant))
                 ):
                     node.body.pop(0)
     except Exception:
         pass
 
-    # 剔除单行 # 注释 (简单正则过滤)
     lines = []
     for line in code.splitlines():
         line_s = line.strip()
         if line_s.startswith("#"):
             continue
-        if " #" in line and not (line.count('"') % 2 != 0 or line.count("'") % 2 != 0):
-            line = line.split(" #")[0].rstrip()
+        if "#" in line and (line.count('"') % 2 != 0 or line.count("'") % 2 != 0):
+            line = line.split("#")[0]
         lines.append(line)
     return "\n".join(lines)
 
 
 def strip_generic_comments(code: str) -> str:
-    """通用 C/C++/Java/JS 类的注释简单清理 (/*...*/ 与 //...)"""
     code = re.sub(r"/\*[\s\S]*?\*/", "", code)
     lines = []
     for line in code.splitlines():
-        line_s = line.strip()
-        if line_s.startswith("//"):
+        if line.strip().startswith("//"):
             continue
         lines.append(line)
     return "\n".join(lines)
 
 
 def remove_comments(code: str, file_path: str) -> str:
-    """根据文件后缀选择对应的清理逻辑"""
     ext = os.path.splitext(file_path)[1].lower()
     if ext == ".py":
         return strip_python_comments(code)
-    elif ext in [".js", ".ts", ".c", ".cpp", ".h", ".hpp", ".java", ".go", ".cs"]:
+    if ext in [".js", ".ts", ".c", ".cpp", ".h", ".hpp", ".java", ".go", ".cs"]:
         return strip_generic_comments(code)
     return code
 
 
 class CodeMergerWidget(QWidget):
-    """代码打包合并 Widget"""
+    """代码打包合并 Widget（控件状态可持久化）"""
+
+    SETTINGS_ORG = "ReadPro"
+    SETTINGS_APP = "CodeMerger"
 
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self._build_ui()
         self._connect_signals()
+        self._load_settings()
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(10)
 
-        # 1. 路径与基本过滤配置
         cfg_group = QGroupBox("1. 源路径与基本过滤规则")
         cfg_layout = QVBoxLayout(cfg_group)
 
@@ -129,8 +121,10 @@ class CodeMergerWidget(QWidget):
         self.src_edit = QLineEdit()
         self.src_edit.setPlaceholderText("请选择要打包的文件夹…")
         self.btn_browse_src = QPushButton("浏览…")
+        self.btn_open_src = QPushButton("打开源目录")
         src_bar.addWidget(self.src_edit, 1)
         src_bar.addWidget(self.btn_browse_src)
+        src_bar.addWidget(self.btn_open_src)
         cfg_layout.addLayout(src_bar)
 
         dest_bar = QHBoxLayout()
@@ -138,8 +132,10 @@ class CodeMergerWidget(QWidget):
         self.dest_edit = QLineEdit()
         self.dest_edit.setPlaceholderText("选择存放合并后的 .txt 文件的文件夹…")
         self.btn_browse_dest = QPushButton("浏览…")
+        self.btn_open_dest = QPushButton("打开目标文件夹")
         dest_bar.addWidget(self.dest_edit, 1)
         dest_bar.addWidget(self.btn_browse_dest)
+        dest_bar.addWidget(self.btn_open_dest)
         cfg_layout.addLayout(dest_bar)
 
         opts_bar = QHBoxLayout()
@@ -156,7 +152,6 @@ class CodeMergerWidget(QWidget):
         cfg_layout.addLayout(opts_bar)
         layout.addWidget(cfg_group)
 
-        # 2. 合并限制策略与高阶选项
         policy_group = QGroupBox("2. 合并拆分策略与处理选项")
         policy_layout = QVBoxLayout(policy_group)
 
@@ -165,13 +160,12 @@ class CodeMergerWidget(QWidget):
 
         self.radio_size_500k = QRadioButton("按文件大小: 500 KB 档位")
         self.radio_size_2m = QRadioButton("按文件大小: 2 MB 档位")
-        self.radio_token = QRadioButton("按 Token 数量阈值:")
-
+        self.radio_token = QRadioButton("按 Token 数量限额:")
         self.radio_size_500k.setChecked(True)
 
-        self.bg_mode.addButton(self.radio_size_500k)
-        self.bg_mode.addButton(self.radio_size_2m)
-        self.bg_mode.addButton(self.radio_token)
+        self.bg_mode.addButton(self.radio_size_500k, 0)
+        self.bg_mode.addButton(self.radio_size_2m, 1)
+        self.bg_mode.addButton(self.radio_token, 2)
 
         mode_bar.addWidget(self.radio_size_500k)
         mode_bar.addWidget(self.radio_size_2m)
@@ -180,11 +174,10 @@ class CodeMergerWidget(QWidget):
         self.spin_token_limit = QSpinBox()
         self.spin_token_limit.setRange(10000, 2000000)
         self.spin_token_limit.setSingleStep(50000)
-        self.spin_token_limit.setValue(200000)  # 默认 20 万 Token
+        self.spin_token_limit.setValue(200000)
         self.spin_token_limit.setSuffix(" Tokens")
         mode_bar.addWidget(self.spin_token_limit)
         mode_bar.addStretch()
-
         policy_layout.addLayout(mode_bar)
 
         extra_opts_bar = QHBoxLayout()
@@ -198,54 +191,116 @@ class CodeMergerWidget(QWidget):
             else "【Tiktoken 未安装】使用字符算法估算 Token"
         )
         self.lbl_token_hint = QLabel(token_hint)
-        self.lbl_token_hint.setStyleSheet("color: #666; font-size: 11px;")
+        self.lbl_token_hint.setStyleSheet("color: #666;")
         extra_opts_bar.addSpacing(20)
         extra_opts_bar.addWidget(self.lbl_token_hint)
         extra_opts_bar.addStretch()
-
         policy_layout.addLayout(extra_opts_bar)
         layout.addWidget(policy_group)
 
-        # 3. 动作按钮与导出管理
         act_bar = QHBoxLayout()
         self.btn_run_merge = QPushButton("🚀 开始合并代码并导出文件")
         self.btn_run_merge.setFixedHeight(40)
         self.btn_run_merge.setStyleSheet(
-            "background-color: #2e7d32; color: white; font-weight: bold; font-size: 14px;"
+            "background-color: #4CAF50; color: white; font-weight: bold;"
         )
         act_bar.addWidget(self.btn_run_merge)
         layout.addLayout(act_bar)
 
-        # 4. 结果与跳过文件展示 Tab
         self.list_tabs = QTabWidget()
         self.merged_result_list = QListWidget()
         self.filtered_list_widget = QListWidget()
-
         self.list_tabs.addTab(self.merged_result_list, "📦 生成的合并文件列表")
         self.list_tabs.addTab(
             self.filtered_list_widget, "🚫 已过滤/跳过的文件清单 (0)"
         )
-
         layout.addWidget(self.list_tabs, 1)
 
     def _connect_signals(self) -> None:
         self.btn_browse_src.clicked.connect(self._browse_src)
         self.btn_browse_dest.clicked.connect(self._browse_dest)
+        self.btn_open_src.clicked.connect(self._open_src_folder)
+        self.btn_open_dest.clicked.connect(self._open_dest_folder)
         self.btn_run_merge.clicked.connect(self.run_merge_process)
+
+        self.src_edit.editingFinished.connect(self._save_settings)
+        self.dest_edit.editingFinished.connect(self._save_settings)
+        self.chk_non_empty.toggled.connect(self._save_settings)
+        self.exclude_ext_edit.editingFinished.connect(self._save_settings)
+        self.chk_remove_comments.toggled.connect(self._save_settings)
+        self.spin_token_limit.valueChanged.connect(self._save_settings)
+        self.radio_size_500k.toggled.connect(self._save_settings)
+        self.radio_size_2m.toggled.connect(self._save_settings)
+        self.radio_token.toggled.connect(self._save_settings)
+
+    def _settings(self) -> QSettings:
+        return QSettings(self.SETTINGS_ORG, self.SETTINGS_APP)
+
+    def _load_settings(self) -> None:
+        s = self._settings()
+        self.src_edit.setText(str(s.value("src_path", "") or ""))
+        self.dest_edit.setText(str(s.value("dest_path", "") or ""))
+        self.chk_non_empty.setChecked(s.value("exclude_empty", True, type=bool))
+        self.exclude_ext_edit.setText(str(s.value("exclude_exts", "") or ""))
+        self.chk_remove_comments.setChecked(
+            s.value("remove_comments", False, type=bool)
+        )
+        self.spin_token_limit.setValue(int(s.value("token_limit", 200000)))
+        mode = int(s.value("split_mode", 0))
+        if mode == 1:
+            self.radio_size_2m.setChecked(True)
+        elif mode == 2:
+            self.radio_token.setChecked(True)
+        else:
+            self.radio_size_500k.setChecked(True)
+
+    def _save_settings(self) -> None:
+        s = self._settings()
+        s.setValue("src_path", self.src_edit.text().strip())
+        s.setValue("dest_path", self.dest_edit.text().strip())
+        s.setValue("exclude_empty", self.chk_non_empty.isChecked())
+        s.setValue("exclude_exts", self.exclude_ext_edit.text().strip())
+        s.setValue("remove_comments", self.chk_remove_comments.isChecked())
+        s.setValue("token_limit", self.spin_token_limit.value())
+        if self.radio_size_2m.isChecked():
+            mode = 1
+        elif self.radio_token.isChecked():
+            mode = 2
+        else:
+            mode = 0
+        s.setValue("split_mode", mode)
+        s.sync()
 
     def set_source_path(self, path: str) -> None:
         if os.path.isdir(path):
             self.src_edit.setText(path)
+            self._save_settings()
 
     def _browse_src(self) -> None:
         path = QFileDialog.getExistingDirectory(self, "选择源代码文件夹")
         if path:
             self.src_edit.setText(path)
+            self._save_settings()
 
     def _browse_dest(self) -> None:
         path = QFileDialog.getExistingDirectory(self, "选择导出目标文件夹")
         if path:
             self.dest_edit.setText(path)
+            self._save_settings()
+
+    def _open_src_folder(self) -> None:
+        path = self.src_edit.text().strip()
+        if not os.path.isdir(path):
+            QMessageBox.warning(self, "提示", "源文件夹路径无效或不存在。")
+            return
+        QDesktopServices.openUrl(QUrl.fromLocalFile(path))
+
+    def _open_dest_folder(self) -> None:
+        path = self.dest_edit.text().strip()
+        if not os.path.isdir(path):
+            QMessageBox.warning(self, "提示", "目标文件夹路径无效或不存在。")
+            return
+        QDesktopServices.openUrl(QUrl.fromLocalFile(path))
 
     def _get_exclude_exts(self) -> Set[str]:
         raw_text = self.exclude_ext_edit.text().strip().lower()
@@ -259,15 +314,12 @@ class CodeMergerWidget(QWidget):
         return ext_set
 
     def _build_tree_str(self, root_dir: str, file_paths: List[str]) -> str:
-        """根据当前批次包含的文件构建层级架构树"""
         rel_paths = [os.path.relpath(p, root_dir) for p in file_paths]
         lines = [
             "=" * 60,
             f"【本部分包含的文件架构树】 (根目录: {os.path.basename(root_dir)})",
             "=" * 60,
         ]
-
-        # 挂载文件目录树
         tree = {}
         for rel in rel_paths:
             parts = rel.split(os.sep)
@@ -291,23 +343,23 @@ class CodeMergerWidget(QWidget):
         return "\n".join(lines)
 
     def run_merge_process(self) -> None:
-        """执行全流程代码合并与打包逻辑"""
+        self._save_settings()
         src_dir = self.src_edit.text().strip()
         dest_dir = self.dest_edit.text().strip()
 
         if not os.path.isdir(src_dir):
             QMessageBox.warning(self, "路径无效", "请选择有效的源代码文件夹！")
             return
-
         if not os.path.isdir(dest_dir):
-            QMessageBox.warning(self, "导出路径无效", "请选择保存合并结果的目标文件夹！")
+            QMessageBox.warning(
+                self, "导出路径无效", "请选择保存合并结果的目标文件夹！"
+            )
             return
 
         only_non_empty = self.chk_non_empty.isChecked()
         strip_comments = self.chk_remove_comments.isChecked()
         exclude_exts = self._get_exclude_exts()
 
-        # 搜集并筛选文件
         valid_files: List[str] = []
         filtered_files: List[str] = []
 
@@ -318,35 +370,40 @@ class CodeMergerWidget(QWidget):
                 ext = ext.lower()
 
                 if exclude_exts and ext in exclude_exts:
-                    filtered_files.append(f"{full_p}  [原因: 匹配排除后缀 '{ext}']")
+                    filtered_files.append(
+                        f"{full_p}  [原因: 匹配排除后缀 '{ext}']"
+                    )
                     continue
-
-                if only_non_empty and os.path.getsize(full_p) == 0:
-                    filtered_files.append(f"{full_p}  [原因: 空文件 (0 字节)]")
+                try:
+                    if only_non_empty and os.path.getsize(full_p) == 0:
+                        filtered_files.append(f"{full_p}  [原因: 空文件 (0 字节)]")
+                        continue
+                except OSError:
                     continue
-
                 valid_files.append(full_p)
 
         self.filtered_list_widget.clear()
         for f_item in filtered_files:
             self.filtered_list_widget.addItem(f_item)
-        self.list_tabs.setTabText(1, f"🚫 已过滤/跳过的文件清单 ({len(filtered_files)})")
+        self.list_tabs.setTabText(
+            1, f"🚫 已过滤/跳过的文件清单 ({len(filtered_files)})"
+        )
 
         if not valid_files:
-            QMessageBox.information(self, "扫描结果", "未搜集到任何符合条件的可合并文件。")
+            QMessageBox.information(
+                self, "扫描结果", "未搜集到任何符合条件的可合并文件。"
+            )
             return
 
-        # 决定拆分阈值 (单位: bytes 或 tokens)
         use_token_mode = self.radio_token.isChecked()
         if self.radio_size_500k.isChecked():
-            limit_value = 500 * 1024  # 500 KB
+            limit_value = 500 * 1024
         elif self.radio_size_2m.isChecked():
-            limit_value = 2 * 1024 * 1024  # 2 MB
+            limit_value = 2 * 1024 * 1024
         else:
             limit_value = self.spin_token_limit.value()
 
-        # 整理与切分文件块
-        batches: List[List[Tuple[str, str]]] = []  # List of [(file_path, content)]
+        batches: List[List[Tuple[str, str]]] = []
         current_batch: List[Tuple[str, str]] = []
         current_batch_cost = 0
 
@@ -363,16 +420,14 @@ class CodeMergerWidget(QWidget):
 
             rel_path = os.path.relpath(fpath, src_dir)
             ext = os.path.splitext(fpath)[1].lstrip(".")
-            # 生成带路径的文件块标头
             block_text = f"\n\n# FILE: {rel_path}\n```{ext}\n{content}\n```\n"
 
-            # 计算增量成本
             if use_token_mode:
                 cost = estimate_tokens(block_text)
             else:
                 cost = len(block_text.encode("utf-8"))
 
-            if current_batch and (current_batch_cost + cost > limit_value):
+            if current_batch and current_batch_cost + cost > limit_value:
                 batches.append(current_batch)
                 current_batch = []
                 current_batch_cost = 0
@@ -383,32 +438,173 @@ class CodeMergerWidget(QWidget):
         if current_batch:
             batches.append(current_batch)
 
-        # 写入导出文件
+        # 3. 导出文件名加上当前项目的前缀
+        project_prefix = os.path.basename(os.path.normpath(src_dir)) or "merged"
+
         self.merged_result_list.clear()
-        base_folder_name = os.path.basename(os.path.abspath(src_dir))
+        written = []
+        for i, batch in enumerate(batches, start=1):
+            paths_in_batch = [p for p, _ in batch]
+            header = self._build_tree_str(src_dir, paths_in_batch)
+            body = "".join(text for _, text in batch)
+            out_name = f"{project_prefix}_merged_part{i}.txt"
+            out_path = os.path.join(dest_dir, out_name)
+            try:
+                with open(out_path, "w", encoding="utf-8") as f:
+                    f.write(header)
+                    f.write(body)
+                written.append(out_path)
+                self.merged_result_list.addItem(out_path)
+            except Exception as e:
+                QMessageBox.warning(self, "写入失败", f"{out_path}\n{e}")
 
-        out_files_info = []
-        for idx, b_items in enumerate(batches, start=1):
-            batch_files = [item[0] for item in b_items]
-            tree_str = self._build_tree_str(src_dir, batch_files)
-
-            out_filename = f"{base_folder_name}_merged_part{idx}.txt"
-            out_filepath = os.path.join(dest_dir, out_filename)
-
-            with open(out_filepath, "w", encoding="utf-8") as out_f:
-                out_f.write(tree_str)
-                for _, b_text in b_items:
-                    out_f.write(b_text)
-
-            size_kb = os.path.getsize(out_filepath) / 1024
-            info_str = f"📄 {out_filename}  ({size_kb:.1f} KB, 包含 {len(b_items)} 个代码块)"
-            self.merged_result_list.addItem(info_str)
-            out_files_info.append(out_filepath)
-
-        self.list_tabs.setCurrentIndex(0)
+        self.list_tabs.setTabText(
+            1, f"🚫 已过滤/跳过的文件清单 ({len(filtered_files)})"
+        )
         QMessageBox.information(
             self,
             "合并完成",
-            f"成功将 {len(valid_files)} 个代码文件打包导出为 {len(batches)} 个文本文件！\n"
-            f"保存位置:\n{dest_dir}",
+            f"共处理有效文件 {len(valid_files)} 个\n"
+            f"生成合并文件 {len(written)} 个\n"
+            f"导出目录: {dest_dir}",
         )
+
+    def do_one_click_merge(self, folder_paths: List[str], project_root: Optional[str] = None) -> List[str]:
+        """
+        供外部调用的“一键代码合并”功能：
+        按照当前保存的策略，把所选文件夹合并导出，并复制结果到系统剪贴板
+        """
+        self._save_settings()
+        dest_dir = self.dest_edit.text().strip()
+        if not os.path.isdir(dest_dir):
+            QMessageBox.warning(
+                self, "导出路径无效", "请先在【代码合并工具】选项卡设置有效的合并结果导出目录！"
+            )
+            return []
+
+        only_non_empty = self.chk_non_empty.isChecked()
+        strip_comments = self.chk_remove_comments.isChecked()
+        exclude_exts = self._get_exclude_exts()
+
+        # 确定参考的基准根路径（用于计算相对路径与前缀名）
+        base_dir = project_root if (project_root and os.path.isdir(project_root)) else (
+            self.src_edit.text().strip() if os.path.isdir(self.src_edit.text().strip()) else folder_paths[0]
+        )
+
+        seen_files = set()
+        valid_files: List[str] = []
+        filtered_files: List[str] = []
+
+        for folder in folder_paths:
+            if not os.path.exists(folder):
+                continue
+            for root, _, files in os.walk(folder):
+                for f in sorted(files):
+                    full_p = os.path.join(root, f)
+                    if full_p in seen_files:
+                        continue
+                    seen_files.add(full_p)
+
+                    _, ext = os.path.splitext(f)
+                    ext = ext.lower()
+
+                    if exclude_exts and ext in exclude_exts:
+                        filtered_files.append(f"{full_p}  [原因: 匹配排除后缀 '{ext}']")
+                        continue
+                    try:
+                        if only_non_empty and os.path.getsize(full_p) == 0:
+                            filtered_files.append(f"{full_p}  [原因: 空文件 (0 字节)]")
+                            continue
+                    except OSError:
+                        continue
+                    valid_files.append(full_p)
+
+        if not valid_files:
+            QMessageBox.information(
+                self, "扫描结果", "所选文件夹中未搜集到任何符合条件的可合并文件。"
+            )
+            return []
+
+        use_token_mode = self.radio_token.isChecked()
+        if self.radio_size_500k.isChecked():
+            limit_value = 500 * 1024
+        elif self.radio_size_2m.isChecked():
+            limit_value = 2 * 1024 * 1024
+        else:
+            limit_value = self.spin_token_limit.value()
+
+        batches: List[List[Tuple[str, str]]] = []
+        current_batch: List[Tuple[str, str]] = []
+        current_batch_cost = 0
+
+        for fpath in valid_files:
+            try:
+                with open(fpath, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+            except Exception as e:
+                filtered_files.append(f"{fpath}  [原因: 读取失败 {e}]")
+                continue
+
+            if strip_comments:
+                content = remove_comments(content, fpath)
+
+            try:
+                rel_path = os.path.relpath(fpath, base_dir)
+            except ValueError:
+                rel_path = fpath
+
+            ext = os.path.splitext(fpath)[1].lstrip(".")
+            block_text = f"\n\n# FILE: {rel_path}\n```{ext}\n{content}\n```\n"
+
+            if use_token_mode:
+                cost = estimate_tokens(block_text)
+            else:
+                cost = len(block_text.encode("utf-8"))
+
+            if current_batch and current_batch_cost + cost > limit_value:
+                batches.append(current_batch)
+                current_batch = []
+                current_batch_cost = 0
+
+            current_batch.append((fpath, block_text))
+            current_batch_cost += cost
+
+        if current_batch:
+            batches.append(current_batch)
+
+        project_prefix = os.path.basename(os.path.normpath(base_dir)) or "merged"
+
+        written = []
+        for i, batch in enumerate(batches, start=1):
+            paths_in_batch = [p for p, _ in batch]
+            header = self._build_tree_str(base_dir, paths_in_batch)
+            body = "".join(text for _, text in batch)
+            out_name = f"{project_prefix}_merged_part{i}.txt"
+            out_path = os.path.join(dest_dir, out_name)
+            try:
+                with open(out_path, "w", encoding="utf-8") as f:
+                    f.write(header)
+                    f.write(body)
+                written.append(out_path)
+            except Exception as e:
+                QMessageBox.warning(self, "写入失败", f"{out_path}\n{e}")
+
+        if written:
+            # 复制导出的文件对象到系统剪贴板
+            clipboard = QApplication.clipboard()
+            mime_data = QMimeData()
+            urls = [QUrl.fromLocalFile(p) for p in written]
+            mime_data.setUrls(urls)
+            clipboard.setMimeData(mime_data)
+
+            # 弹出对话框提示复制文件成功
+            file_names = [os.path.basename(p) for p in written]
+            names_str = "\n".join([f"- {name}" for name in file_names])
+            msg = (
+                f"一键代码合并完成并已自动复制到剪贴板！\n\n"
+                f"成功导出并复制了 {len(written)} 个合并文件：\n"
+                f"{names_str}"
+            )
+            QMessageBox.information(self, "一键代码合并成功", msg)
+
+        return written

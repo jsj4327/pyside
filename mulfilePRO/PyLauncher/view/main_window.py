@@ -1,46 +1,48 @@
-# -*- coding: utf-8 -*-
-
 import os
 from PySide2.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QSplitter, 
-    QTabWidget, QMenuBar, QAction, QStatusBar
+    QTabWidget, QAction, QStatusBar, QApplication
 )
 from PySide2.QtCore import Qt, Signal
-from PySide2.QtGui import QIcon
+from PySide2.QtGui import QIcon, QCloseEvent
 
-# 导入各个局部视图组件
 from view.project_tree_view import ProjectTreeView
 from view.runner_view import RunnerView
 from view.console_view import ConsoleView
 from view.source_editor_view import SourceEditorView
 
 class MainWindow(QMainWindow):
-    """全局主窗口视图：组装所有局部视图，构建多标签页的 IDE 界面"""
+    """全局主窗口视图"""
 
     open_dir_requested = Signal()
+    window_closing = Signal()  # 窗口关闭信号，通知 Controller 持久化状态
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("PyLauncher (企业级 MVC 架构)")
-        self.resize(1200, 800)
 
-        # 【新增】设置窗口图标 Logo
+        self._init_window_size()
         self._set_window_icon()
-
         self._init_ui()
         self._init_menu()
 
+    def _init_window_size(self):
+        screen = QApplication.primaryScreen().availableGeometry()
+        width = int(screen.width() * 0.85)
+        height = int(screen.height() * 0.85)
+        self.resize(width, height)
+
+        x = int(screen.x() + (screen.width() - width) / 2)
+        y = int(screen.y() + (screen.height() - height) / 2)
+        self.move(x, y)
+
     def _set_window_icon(self):
-        """解析并设置应用图标 Logo"""
-        # 获取项目根目录 (当前文件位于 view/ 下，往上一级即为根目录)
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         icon_path = os.path.join(base_dir, "resources", "icons", "pylancher.png")
-        
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
 
     def _init_menu(self):
-        """构建顶部菜单栏"""
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu("文件(F)")
         
@@ -53,8 +55,10 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self.status_bar)
         self.status_bar.showMessage("就绪 - 请打开一个 Python 项目。")
 
+    def show_status_message(self, message, timeout=3000):
+        self.status_bar.showMessage(message, timeout)
+
     def _init_ui(self):
-        """构建核心界面布局（左右分割 + 右侧标签页）"""
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
         
@@ -64,41 +68,35 @@ class MainWindow(QMainWindow):
         self.main_splitter = QSplitter(Qt.Horizontal, self)
         main_layout.addWidget(self.main_splitter)
 
-        # ==================== 左侧：项目文件树 ====================
         self.project_tree = ProjectTreeView(self)
         self.main_splitter.addWidget(self.project_tree)
 
-        # ==================== 右侧：多标签页工作区 ====================
         self.right_tabs = QTabWidget(self)
-        
-        # 开启文档模式，去除系统主题多余渲染
         self.right_tabs.setDocumentMode(True) 
         
-        # 浅色主题标签页样式
         self.right_tabs.setStyleSheet("""
             QTabWidget::pane { 
-                border: 1px solid #cccccc; 
-                background: #ffffff; 
+                border: 1px solid #ccc;
+                background: #fff;
             }
             QTabBar::tab {
                 background: #f0f0f0;
-                color: #555555;
+                color: #333;
                 padding: 8px 15px;
                 border: none;
             }
             QTabBar::tab:selected {
-                background: #ffffff;
-                color: #000000;
+                background: #fff;
+                color: #000;
                 border-top: 2px solid #007acc;
             }
             QTabBar::tab:hover:!selected {
-                background: #e8e8e8;
+                background: #e5e5e5;
             }
         """)
         
         self.main_splitter.addWidget(self.right_tabs)
 
-        # --- 标签页 1：运行与控制台 ---
         tab_run = QWidget()
         tab_run_layout = QVBoxLayout(tab_run)
         tab_run_layout.setContentsMargins(5, 5, 5, 5)
@@ -111,9 +109,12 @@ class MainWindow(QMainWindow):
 
         self.right_tabs.addTab(tab_run, "运行与控制台")
 
-        # --- 标签页 2：源码浏览与编辑 ---
         self.editor_view = SourceEditorView(self)
         self.right_tabs.addTab(self.editor_view, "源码编辑器")
 
-        # 设置左右初始比例
-        self.main_splitter.setSizes([240, 960])
+        self.main_splitter.setSizes([280, 920])
+
+    def closeEvent(self, event: QCloseEvent):
+        """拦截窗口关闭事件，触发表单与控件持久化"""
+        self.window_closing.emit()
+        super().closeEvent(event)

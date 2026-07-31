@@ -1,12 +1,16 @@
 import sys
 from PySide2.QtWidgets import QApplication
+from view.main_window import MainWindow
 from controller.main_controller import MainController
 
-if __name__ == "__main__":
+def main():
     app = QApplication(sys.argv)
     
-    # 初始化主控制器（内部会依次拉起 Model、View 和 Service）
-    main_controller = MainController()
-    main_controller.show()
+    main_window = MainWindow()
+    main_controller = MainController(main_window)
     
+    main_window.show()
     sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()

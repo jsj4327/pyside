@@ -1,78 +1,132 @@
-# -*- coding: utf-8 -*-
-
-from PySide2.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QComboBox, QLabel, QLineEdit, QGroupBox
+import os
+import sys
+from PySide2.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QFormLayout, 
+    QLineEdit, QPushButton, QFileDialog, QGroupBox
+)
 from PySide2.QtCore import Signal
 
+
 class RunnerView(QWidget):
-    """运行控制面板视图：纯 UI 呈现，不包含任何复杂业务逻辑"""
-    
-    # 定义 UI 动作触发信号
-    run_clicked = Signal(str, str)  # 信号参数：(目标脚本, 命令行参数)
-    stop_clicked = Signal()         # 停止按钮点击信号
+    """运行入口视图：配置 Python 解释器、脚本路径、参数并一键启动程序"""
+
+    run_requested = Signal(dict)  # 发送运行参数字典
 
     def __init__(self, parent=None):
-        """初始化运行控制面板 UI"""
         super().__init__(parent)
         self._init_ui()
 
     def _init_ui(self):
-        """构建界面布局"""
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(0, 0, 0, 0)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 10, 10, 10)
 
-        # 创建运行配置分组框
-        config_group = QGroupBox("运行配置面板", self)
-        config_layout = QVBoxLayout(config_group)
+        group_box = QGroupBox("程序运行配置", self)
+        form_layout = QFormLayout(group_box)
+        form_layout.setSpacing(10)
 
-        # 运行目标选择行布局
-        target_layout = QHBoxLayout()
-        target_layout.addWidget(QLabel("运行入口:"))
+        # 1. Python 解释器路径
+        self.txt_interpreter = QLineEdit(self)
+        self.txt_interpreter.setText(sys.executable)
+        btn_browse_interp = QPushButton("浏览...", self)
+        btn_browse_interp.clicked.connect(self._browse_interpreter)
         
-        # 下拉框支持用户手动输入或选择扫描出的主入口
-        self.combo_target = QComboBox(self)
-        self.combo_target.setEditable(True)
-        target_layout.addWidget(self.combo_target)
-        
-        # 绿色运行按钮
-        self.btn_run = QPushButton("运行", self)
-        self.btn_run.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold;")
-        self.btn_run.clicked.connect(self._on_run_button_clicked)
-        target_layout.addWidget(self.btn_run)
+        layout_interp = QHBoxLayout()
+        layout_interp.addWidget(self.txt_interpreter)
+        layout_interp.addWidget(btn_browse_interp)
+        form_layout.addRow("Python 解释器:", layout_interp)
 
-        # 红色停止按钮
-        self.btn_stop = QPushButton("停止", self)
-        self.btn_stop.setStyleSheet("background-color: #F44336; color: white; font-weight: bold;")
-        self.btn_stop.clicked.connect(self.stop_clicked.emit)
-        target_layout.addWidget(self.btn_stop)
+        # 2. 脚本路径（支持单击文件树自动填充）
+        self.txt_script_path = QLineEdit(self)
+        self.txt_script_path.setPlaceholderText("点击左侧 .py 文件自动填充，或手动选择")
+        btn_browse_script = QPushButton("浏览...", self)
+        btn_browse_script.clicked.connect(self._browse_script)
 
-        config_layout.addLayout(target_layout)
+        layout_script = QHBoxLayout()
+        layout_script.addWidget(self.txt_script_path)
+        layout_script.addWidget(btn_browse_script)
+        form_layout.addRow("运行脚本路径:", layout_script)
 
-        # 命令行附加参数输入行布局
-        args_layout = QHBoxLayout()
-        args_layout.addWidget(QLabel("命令行参数:"))
-        self.input_args = QLineEdit(self)
-        self.input_args.setPlaceholderText("多个参数以空格分隔，例如: --port 8080")
-        args_layout.addWidget(self.input_args)
-        config_layout.addLayout(args_layout)
+        # 3. 命令行参数
+        self.txt_args = QLineEdit(self)
+        self.txt_args.setPlaceholderText("例如: --port 8080 --debug (选填)")
+        form_layout.addRow("命令行参数:", self.txt_args)
 
-        main_layout.addWidget(config_group)
+        # 4. 工作目录
+        self.txt_work_dir = QLineEdit(self)
+        btn_browse_workdir = QPushButton("浏览...", self)
+        btn_browse_workdir.clicked.connect(self._browse_workdir)
 
-    def _on_run_button_clicked(self):
-        """内部槽函数：当点击运行按钮时收集界面数据并向外发射信号"""
-        target = self.combo_target.currentText().strip()
-        args = self.input_args.text().strip()
-        self.run_clicked.emit(target, args)
+        layout_workdir = QHBoxLayout()
+        layout_workdir.addWidget(self.txt_work_dir)
+        layout_workdir.addWidget(btn_browse_workdir)
+        form_layout.addRow("工作目录 (CWD):", layout_workdir)
 
-    def set_candidates(self, candidates):
-        """更新下拉框中的候选入口列表"""
-        self.combo_target.clear()
-        self.combo_target.addItems(candidates)
+        layout.addWidget(group_box)
 
-    def set_current_target(self, target):
-        """设置当前选中的目标文件"""
-        index = self.combo_target.findText(target)
-        if index >= 0:
-            self.combo_target.setCurrentIndex(index)
-        else:
-            self.combo_target.addItem(target)
-            self.combo_target.setCurrentText(target)
+        # 一键启动按钮（无终端弹窗，支持多开）
+        self.btn_run = QPushButton("🚀 一键启动程序 (支持多进程多开)", self)
+        self.btn_run.setStyleSheet("""
+            QPushButton {
+                background-color: #007acc;
+                color: white;
+                font-size: 14px;
+                font-weight: bold;
+                padding: 10px;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #0062a3;
+            }
+            QPushButton:pressed {
+                background-color: #004d80;
+            }
+        """)
+        self.btn_run.clicked.connect(self._on_run_clicked)
+        layout.addWidget(self.btn_run)
+
+        layout.addStretch()
+
+    def set_script_path(self, path: str):
+        """外部（文件树单击）设置脚本路径，并同步更新默认工作目录"""
+        self.txt_script_path.setText(path)
+        if path and os.path.exists(path):
+            work_dir = os.path.dirname(os.path.abspath(path))
+            self.txt_work_dir.setText(work_dir)
+
+    def get_config(self) -> dict:
+        """获取当前界面的所有运行配置"""
+        return {
+            "interpreter": self.txt_interpreter.text().strip() or sys.executable,
+            "script_path": self.txt_script_path.text().strip(),
+            "args": self.txt_args.text().strip(),
+            "work_dir": self.txt_work_dir.text().strip()
+        }
+
+    def set_config(self, config: dict):
+        """恢复保存的运行配置"""
+        if "interpreter" in config and config["interpreter"]:
+            self.txt_interpreter.setText(config["interpreter"])
+        if "script_path" in config:
+            self.txt_script_path.setText(config["script_path"])
+        if "args" in config:
+            self.txt_args.setText(config["args"])
+        if "work_dir" in config:
+            self.txt_work_dir.setText(config["work_dir"])
+
+    def _browse_interpreter(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "选择 Python 解释器", "/usr/bin", "Executables (*)")
+        if file_path:
+            self.txt_interpreter.setText(file_path)
+
+    def _browse_script(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "选择 Python 脚本", "", "Python Files (*.py)")
+        if file_path:
+            self.set_script_path(file_path)
+
+    def _browse_workdir(self):
+        dir_path = QFileDialog.getExistingDirectory(self, "选择工作目录")
+        if dir_path:
+            self.txt_work_dir.setText(dir_path)
+
+    def _on_run_clicked(self):
+        self.run_requested.emit(self.get_config())
