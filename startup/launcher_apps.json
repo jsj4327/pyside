@@ -1,0 +1,65 @@
+[
+    {
+        "name": "desktopFileGen",
+        "icon": "../python小程序项目/desktop文件生成器/image_101204885222667.png",
+        "exe_path": "../python小程序项目/desktop文件生成器/desktopFileGen.py",
+        "category": "我的脚本",
+        "description": "桌面图标生成器"
+    },
+    {
+        "name": "saveprompt",
+        "icon": "../saveprompt/image_874489758716160.png",
+        "exe_path": "../saveprompt/saveprompt.py",
+        "category": "我的脚本",
+        "description": "提示词词典"
+    },
+    {
+        "name": "runpy",
+        "icon": "../runpy/runpy.png",
+        "exe_path": "../runpy/runpy.py",
+        "category": "我的脚本",
+        "description": "py运行器"
+    },
+    {
+        "name": "main",
+        "icon": "../readpro/image_513155952038090.png",
+        "exe_path": "../readpro/main.py",
+        "category": "我的脚本",
+        "description": "项目读取器"
+    },
+    {
+        "name": "GrokProjectBuilder",
+        "icon": "../ProjectBuilder/projectbuilder.png",
+        "exe_path": "../ProjectBuilder/GrokProjectBuilder.py",
+        "category": "我的脚本",
+        "description": "多文件项目管理器"
+    },
+    {
+        "name": "gitpull",
+        "icon": "../gitpull/gitpull.png",
+        "exe_path": "../gitpull/gitpull.py",
+        "category": "我的脚本",
+        "description": "Git图形工具"
+    },
+    {
+        "name": "genpro",
+        "icon": "../genpro/image_319556416816993.png",
+        "exe_path": "../genpro/genpro.py",
+        "category": "我的脚本",
+        "description": "项目架构生成"
+    },
+    {
+        "name": "bugnote",
+        "icon": "../bugnote/bugnote.png",
+        "exe_path": "../bugnote/bugnote.py",
+        "category": "我的脚本",
+        "description": "程序BUG记录器"
+    },
+    {
+        "name": "aptsoft",
+        "icon": "../aptclick/aptsoft.png",
+        "exe_path": "../aptclick/aptsoft.py",
+        "category": "我的脚本",
+        "description": "软件包安装器"
+    }
+]

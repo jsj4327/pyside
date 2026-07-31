@@ -494,6 +494,10 @@ print("1到100求和结果:", calculate_sum(100))
         if not self.save_to_file():
             return
         self.process = QProcess()
+
+        # 【新增】设置子程序的工作目录为脚本文件所在的目录
+        self.process.setWorkingDirectory(os.path.dirname(self.file_path))
+
         self.process.setProcessChannelMode(QProcess.MergedChannels)
         self.process.readyReadStandardOutput.connect(self.handle_output)
         self.process.readyReadStandardError.connect(self.handle_error)

@@ -1,0 +1,28 @@
+[
+    {
+        "name": "数据分析平台",
+        "icon": null,
+        "category": "数据"
+    },
+    {
+        "name": "报表生成器",
+        "icon": null,
+        "category": "办公"
+    },
+    {
+        "name": "日志监控工具",
+        "icon": null,
+        "category": "运维"
+    },
+    {
+        "name": "API调试助手",
+        "icon": null,
+        "category": "开发"
+    },
+    {
+        "name": "aptsoft",
+        "icon": "/home/user/桌面/pyside/aptclick/aptsoft.png",
+        "exe_path": "/home/user/桌面/pyside/aptclick/aptsoft.py",
+        "category": "我的工具"
+    }
+]
