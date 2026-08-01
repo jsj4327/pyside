@@ -79,18 +79,17 @@ class CodeFileGenerator(QMainWindow):
             self.lbl_dir.setText(d)
 
     # ══════════════════════════════════════════════════
-    #  核心解析逻辑
+    #  核心解析逻辑 (已修复 & 增强版)
     # ══════════════════════════════════════════════════
     def _parse_json_input(self, raw: str) -> list:
-        """
-        多策略解析：
-          策略1: 直接 json.loads（处理合法 JSON）
-          策略2: 修复常见问题后重试
-          策略3: 正则提取 filename + code 对（兜底）
-        """
         raw = raw.strip()
         if not raw:
             return []
+
+        # 清理 AI 经常输出的 Markdown 代码块标记
+        raw = re.sub(r'^\s*```(?:json)?', '', raw, flags=re.MULTILINE)
+        raw = re.sub(r'```\s*$', '', raw, flags=re.MULTILINE)
+        raw = raw.strip()
 
         # ── 策略 1：直接解析 ──
         items = self._try_direct_parse(raw)
@@ -103,60 +102,53 @@ class CodeFileGenerator(QMainWindow):
             return items
 
         # ── 策略 3：正则兜底 ──
-        items = self._regex_fallback(raw)
-        return items
+        return self._regex_fallback(raw)
 
     def _try_direct_parse(self, raw: str) -> list:
-        """直接 json.loads，处理各种外层包装"""
         try:
-            data = json.loads(raw)
+            # 添加 strict=False，允许 JSON 字符串内部存在真实的换行符/制表符
+            data = json.loads(raw, strict=False)
             return self._extract_items(data)
         except (json.JSONDecodeError, TypeError):
             return []
 
     def _try_fixed_parse(self, raw: str) -> list:
-        """尝试修复常见 JSON 问题后解析"""
         fixed = raw
 
+        # 处理非法的转义字符（如代码里的正则 \d 而不是 \\d）
+        fixed = re.sub(r'\\(?![/"\\bfnrtu])', r'\\\\', fixed)
+
+        # 处理尾随逗号 (Trailing commas)
+        fixed = re.sub(r',\s*([}\]])', r'\1', fixed)
+
         # 修复：code 字段内的未转义双引号
-        # 思路：找到 "code": "..." 段，对内部的裸引号转义
         fixed = self._fix_code_quotes(fixed)
 
         try:
-            data = json.loads(fixed)
+            data = json.loads(fixed, strict=False)
             return self._extract_items(data)
         except (json.JSONDecodeError, TypeError):
             return []
 
     def _fix_code_quotes(self, text: str) -> str:
-        """
-        修复 "code": "..." 中未转义的双引号。
-        逐字符扫描，在 code 值内部对裸 " 加反斜杠。
-        """
         result = []
         i = 0
         n = len(text)
 
         while i < n:
-            # 检测 "code" 键的开始
             if text[i:i+7] == '"code":':
                 result.append('"code":')
                 i += 7
-                # 跳过空白
                 while i < n and text[i] in ' \t\r\n':
                     result.append(text[i])
                     i += 1
-                # 期望一个开引号
                 if i < n and text[i] == '"':
                     result.append('"')
                     i += 1
-                    # 扫描 code 值直到找到真正的结束引号
-                    # 结束引号的特征：后面跟 , 或 } 或 ] 或空白+这些字符
                     code_chars = []
                     while i < n:
                         ch = text[i]
                         if ch == '\\':
-                            # 已转义的字符，原样保留
                             code_chars.append(ch)
                             i += 1
                             if i < n:
@@ -164,21 +156,17 @@ class CodeFileGenerator(QMainWindow):
                                 i += 1
                             continue
                         if ch == '"':
-                            # 判断是否是结束引号
-                            # 向后看：跳过空白后如果是 , } ] 则是结束
                             j = i + 1
                             while j < n and text[j] in ' \t\r\n':
                                 j += 1
-                            if j >= n or text[j] in ',}]\n':
-                                # 这是结束引号
+                            # 绝不能将 \n 作为 JSON 值的结束符
+                            if j >= n or text[j] in ',}]':
                                 break
                             else:
-                                # 这是 code 内部的裸引号，需要转义
                                 code_chars.append('\\"')
                                 i += 1
                                 continue
                         if ch == '\n':
-                            # JSON 字符串内不能有裸换行，转为 \\n
                             code_chars.append('\\n')
                             i += 1
                             continue
@@ -197,53 +185,41 @@ class CodeFileGenerator(QMainWindow):
         return ''.join(result)
 
     def _extract_items(self, data) -> list:
-        """从解析后的数据中提取文件列表"""
         if isinstance(data, list):
             return data
         if isinstance(data, dict):
-            # 处理 {"files": [...]} 包装
             if 'files' in data and isinstance(data['files'], list):
                 return data['files']
-            # 单个对象
             if 'filename' in data:
                 return [data]
-            # 尝试取第一个 list 类型的值
             for v in data.values():
                 if isinstance(v, list):
                     return v
         return []
 
     def _regex_fallback(self, raw: str) -> list:
-        """
-        终极兜底：用正则逐个提取 "filename" 和 "code" 字段。
-        适用于 JSON 严重损坏的情况。
-        """
         items = []
-        # 匹配 "filename": "xxx"
-        fn_pattern = re.compile(r'"filename"\s*:\s*"([^"]+)"')
-        # 匹配 "code": "..." （贪婪到下一个 "filename" 或结尾）
-        # 使用分段策略
-        segments = re.split(r'(?=\{\s*"filename")', raw)
-
-        for seg in segments:
-            fn_match = fn_pattern.search(seg)
+        segments = re.split(r'"filename"\s*:\s*', raw)
+        
+        for seg in segments[1:]:
+            fn_match = re.match(r'"([^"]+)"', seg)
             if not fn_match:
                 continue
             filename = fn_match.group(1)
 
-            # 提取 code：从 "code": " 开始到段尾的 "} 或 "},
-            code_match = re.search(
-                r'"code"\s*:\s*"(.*?)"(?:\s*\}|\s*,)',
-                seg, re.DOTALL
-            )
+            code_match = re.search(r'"code"\s*:\s*"(.*)', seg, re.DOTALL)
             if code_match:
-                code = code_match.group(1)
-                # 反转义
-                code = code.replace('\\n', '\n').replace('\\"', '"').replace('\\\\', '\\')
-            else:
-                code = ""
-
-            items.append({"filename": filename, "code": code})
+                code_str = code_match.group(1)
+                end_match = re.search(r'"\s*(?:}|,\s*")', code_str)
+                if end_match:
+                    code_str = code_str[:end_match.start()]
+                else:
+                    code_str = code_str.rstrip()
+                    if code_str.endswith('"'):
+                        code_str = code_str[:-1]
+                
+                code_str = code_str.replace('\\n', '\n').replace('\\"', '"').replace('\\\\', '\\')
+                items.append({"filename": filename, "code": code_str})
 
         return items
 
