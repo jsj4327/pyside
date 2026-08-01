@@ -108,6 +108,7 @@ console.log("【排查日志】content-script.js 开始加载执行");
     } 
     else if (request.type === "WS_RECEIVED_DATA") {
       try {
+        console.log("request.data=", request.data);
         const data = JSON.parse(request.data);
         const jsonString = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
         

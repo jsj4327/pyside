@@ -1166,59 +1166,20 @@ class MainWindow(QMainWindow):
         menu.exec_(self.tree_view.viewport().mapToGlobal(pos))
 
     def create_file_in_directory(self, dir_path):
-        file_name, ok = QInputDialog.getText(
-            self, "新建文件",
-            "输入文件名（支持路径，如 sub/dir/module.py）:"
-        )
-        if not ok or not file_name.strip():
-            return
-
-        # 统一分隔符并去掉首尾空白
-        rel = file_name.strip().replace("\\", "/").lstrip("/")
-        if not rel:
-            return
-
-        # 最终完整路径
-        full_path = os.path.normpath(os.path.join(dir_path, rel))
-
-        # 安全检查：防止跳出项目目录
-        if self.project_root:
-            try:
-                common = os.path.commonpath([
-                    os.path.abspath(full_path),
-                    os.path.abspath(self.project_root)
-                ])
-                if common != os.path.abspath(self.project_root):
-                    QMessageBox.warning(self, "错误", "不允许在项目目录外创建文件！")
-                    return
-            except ValueError:
-                QMessageBox.warning(self, "错误", "路径非法！")
+        file_name, ok = QInputDialog.getText(self, "新建文件", "输入文件名:")
+        if ok and file_name.strip():
+            full_path = os.path.join(dir_path, file_name.strip())
+            if os.path.exists(full_path):
+                QMessageBox.warning(self, "错误", "文件已存在！")
                 return
-
-        if os.path.exists(full_path):
-            QMessageBox.warning(self, "错误", "文件已存在！")
-            return
-
-        # 如果包含路径，先创建中间目录
-        parent_dir = os.path.dirname(full_path)
-        if parent_dir and not os.path.exists(parent_dir):
             try:
-                os.makedirs(parent_dir, exist_ok=True)
+                with open(full_path, "w", encoding="utf-8") as f:
+                    f.write("# -*- coding: utf-8 -*-\n\n")
+                self.status_bar.showMessage(f"已创建文件: {full_path}")
+                self.load_file_to_tab(full_path)
+                self.refresh_modification_tree()
             except Exception as e:
-                QMessageBox.critical(self, "错误", f"创建目录失败:\n{str(e)}")
-                return
-
-        try:
-            with open(full_path, "w", encoding="utf-8") as f:
-                f.write("# -*- coding: utf-8 -*-\n\n")
-            self.status_bar.showMessage(f"已创建文件: {full_path}")
-            self.load_file_to_tab(full_path)
-            self.refresh_modification_tree()
-            # 刷新文件树显示（可选，让新建的文件立刻可见）
-            if hasattr(self, "fs_model"):
-                self.fs_model.setRootPath(self.fs_model.rootPath())
-        except Exception as e:
-            QMessageBox.critical(self, "错误", f"创建文件失败:\n{str(e)}")
+                QMessageBox.critical(self, "错误", f"创建文件失败:\n{str(e)}")
 
     def create_directory_in_directory(self, dir_path):
         dir_name, ok = QInputDialog.getText(self, "新建文件夹", "输入文件夹名称:")

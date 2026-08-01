@@ -23,7 +23,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       files: ["content/content-script.js"]
-      // files: ["content/content-script-deepseek.js"]
+      //  files: ["content/content-script-deepseek.js"]
     });
     console.log("【排查日志】JS 逻辑注入成功");
   } catch (error) {
