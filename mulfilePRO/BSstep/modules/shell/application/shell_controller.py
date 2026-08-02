@@ -1,4 +1,3 @@
-# modules/shell/application/shell_controller.py
 from shared.infrastructure.event_bus import event_bus
 
 class ShellController:
@@ -6,13 +5,13 @@ class ShellController:
 
     def __init__(self, view=None):
         self.view = view
-        # 订阅全局系统事件
         event_bus.subscribe("request:result_ready", self.handle_result_ready)
         event_bus.subscribe("bridge:server_status", self.handle_server_status)
         event_bus.subscribe("bridge:client_status", self.handle_client_status)
+        event_bus.subscribe("plugin:data_processed", self.handle_plugin_data_processed)
+        event_bus.subscribe("workspace:scan_finished", self.handle_workspace_scan_finished)
 
     def handle_send_request(self, raw_text: str, framework: str):
-        """处理用户点击发送请求的业务逻辑"""
         print(f"[ShellController] 触发请求发送，当前框架: {framework}")
         event_bus.publish("request:send_clicked", {
             "raw_prompt": raw_text,
@@ -20,19 +19,15 @@ class ShellController:
         })
 
     def handle_framework_change(self, framework_name: str):
-        """处理框架切换的业务逻辑"""
         event_bus.publish("framework:changed", {"framework": framework_name})
 
     def handle_result_ready(self, data: dict):
-        """处理 Agent 返回结果：校验最终提示词并决定是否推送给插件端"""
         final_prompt = data.get("final_prompt", "")
         parsed_result = data.get("parsed_result", "")
 
-        # 通知视图渲染数据
         if self.view:
             self.view.update_results(final_prompt, parsed_result)
 
-        # 业务规则：校验最终提示词是否为空，决定是否通过桥接通道推送给插件端
         if final_prompt and final_prompt.strip():
             event_bus.publish("bridge:send_to_extension", {"text": final_prompt})
             print("[ShellController] 最终提示词校验通过，已向插件端口发送")
@@ -49,3 +44,29 @@ class ShellController:
         state = data.get("state", "init")
         if self.view:
             self.view.update_client_status(state)
+
+    def handle_plugin_data_processed(self, data: dict):
+        raw_result = data.get("raw_result", "")
+        parsed_result = data.get("parsed_result", "")
+
+        if self.view:
+            self.view.update_plugin_received_results(raw_result, parsed_result)
+        print("[ShellController] 已将插件数据更新至反馈结果与结果解析控件")
+
+    def request_scan_workspace(self, dir_path: str, exclude_exts: str, exclude_empty: bool):
+        """发起文件夹扫描请求，增加 exclude_empty 参数"""
+        print(f"[ShellController] 触发工作台扫描: {dir_path}, 过滤空文件: {exclude_empty}")
+        event_bus.publish("workspace:scan_requested", {
+            "dir_path": dir_path,
+            "exclude_exts": exclude_exts,
+            "exclude_empty": exclude_empty
+        })
+
+    def handle_workspace_scan_finished(self, data: dict):
+        success = data.get("success", False)
+        message = data.get("message", "")
+        file_list = data.get("file_list", [])
+
+        if self.view:
+            self.view.update_workspace_scanned_files(success, message, file_list)
+        print(f"[ShellController] 工作台扫描结果已同步至视图: {message}")

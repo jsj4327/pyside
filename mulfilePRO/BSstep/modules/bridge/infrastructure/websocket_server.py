@@ -62,12 +62,13 @@ class BridgeServer(QObject):
     def _check_connections(self):
         """主动轮询检查连接状态（心跳机制）"""
         for client in list(self.clients):
-            # 1. 检查底层 socket 状态是否已经不在连接中
-            if client.state() != QWebSocket.ConnectedState:
-                print("[WebSocket] 轮询检测到僵尸连接，执行清理")
+            # 1. 检查底层 socket 状态是否还处于连接中 (PySide2.QtNetwork.QAbstractSocket.ConnectedState 等于 3，或者直接用数值/跳过严格枚举检查)
+            # 也可以通过判断 isValid() 来替代
+            if not client.isValid():
+                print("[WebSocket] 轮询检测到失效连接，执行清理")
                 self._remove_client(client)
             else:
-                # 2. 发送 ping 帧。一方面检测连通性，另一方面防止 Chrome 插件 Service Worker 休眠
+                # 2. 发送 ping 帧保持活跃
                 client.ping()
 
     def _remove_client(self, client):
@@ -82,12 +83,18 @@ class BridgeServer(QObject):
             event_bus.publish("bridge:client_status", {"state": "disconnected"})
 
     def _on_text_received(self, message):
+        # 无论内容是什么，先无条件在终端打印，确保能看到！
+        print(f"[WebSocket 收到原始文本] 长度: {len(message)}, 内容预览: {message[:100]}...")
+        
         try:
+            # 尝试解析为 JSON
             data = json.loads(message)
             self.message_received.emit(data)
             event_bus.publish("bridge:message_received", data)
         except json.JSONDecodeError:
-            print(f"[WebSocket] 无法解析的非 JSON 消息: {message}")
+            # 如果不是 JSON，也通过事件总线把纯文本透传过去，并作为字典包装
+            print(f"[WebSocket] 收到非 JSON 纯文本，执行兼容透传")
+            event_bus.publish("bridge:message_received", {"payload": message})
 
     def _on_send_event(self, data: dict):
         text_msg = data.get("text", "")

@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "AI 自动化助手",
+  "version": "1.0",
+  "description": "在网页右侧常驻显示 AI 助手面板并同步 PySide 代码",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "action": {},
+  "background": {
+    "service_worker": "background/service-worker.js"
+  }
+}

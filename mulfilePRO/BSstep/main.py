@@ -4,6 +4,9 @@ from PySide2.QtWidgets import QApplication
 from modules.shell.main_window import MainWindow
 import modules.agent.infrastructure.prompt_engine
 from modules.bridge.infrastructure.websocket_server import BridgeServer
+import modules.agent.infrastructure.parser_engine
+# 【关键修复】引入工作空间引擎，使其单例完成事件总线订阅注册
+import modules.agent.infrastructure.workspace_engine
 
 def main():
     app = QApplication(sys.argv)

@@ -8,6 +8,24 @@
   ],
   "prompts": [
     {
+      "id": "1785658775",
+      "title": "代码编辑器",
+      "category": "编程协同",
+      "tags": "",
+      "prompt": "你是一个资深的 Python / PySide2 桌面端开发专家。请为我设计并实现一个工业级的代码编辑器组件 `CodeEditorWidget`。\n\n【核心架构要求】\n1. 基于 QPlainTextEdit 自定义实现，不依赖第三方重型库（如 QScintilla），确保轻量与跨平台兼容。\n2. 所有渲染与解析逻辑必须在主线程安全执行，耗时操作（如大文件加载）需异步处理。\n3. 采用 MVC 或组件化设计，语法高亮、行号、折叠等模块解耦，便于后续扩展。\n\n【UI 布局与外观】\n1. 主体区域：左侧行号栏（LineNumberArea）+ 右侧代码编辑区，两者滚动同步。\n2. 行号栏：灰色背景，右对齐数字，当前行高亮标记，宽度随最大行数动态自适应。\n3. 编辑区：等宽字体（Monospace），支持当前行背景高亮，括号匹配高亮。\n4. 底部状态栏：显示 行:列 | 编码 | 换行符 | 文件大小 | 语言类型。\n5. 整体配色提供 Dark / Light 两套主题，通过 QSS 或调色板切换。\n\n【核心编辑功能】\n1. 语法高亮：基于 QSyntaxHighlighter + 正则表达式，至少支持 Python / JSON / Plain Text，关键词/字符串/注释/数字分色。\n2. 自动缩进：回车时继承上一行缩进；Tab 键插入空格（可配置 Tab Width）。\n3. 括号补全：输入 ( [ { \" ' 时自动补全配对符号，光标置于中间。\n4. 行操作：Ctrl+D 复制当前行，Ctrl+Shift+K 删除当前行，Alt+↑/↓ 上下移动当前行。\n5. 查找替换：Ctrl+F 弹出内嵌查找栏，支持正则、大小写敏感、全词匹配、高亮所有结果。\n6. 撤销/重做：原生支持，Ctrl+Z / Ctrl+Shift+Z。\n\n【文件 I/O 与编码】\n1. 打开文件：自动检测编码（chardet），支持 UTF-8 / GBK / Latin-1 回退链。\n2. 保存文件：保留原始编码与换行符（LF/CRLF），未修改时不触发实际写入。\n3. 大文件保护：超过 10MB 时分块读取，加载期间显示进度条，禁用语法高亮。\n4. 脏状态追踪：内容变更时标题/标签页显示 * 标记，关闭前提示保存。\n\n【公共 API 接口】\n- open_file(path: str) -> bool\n- save_file(path: Optional[str] = None) -> bool\n- get_content() -> str\n- set_content(text: str)\n- set_language(lang: str)  # \"python\" | \"json\" | \"text\"\n- set_theme(theme: str)    # \"dark\" | \"light\"\n- set_tab_width(width: int)\n- is_dirty() -> bool\n- go_to_line(line: int, column: int = 0)\n\n【信号定义】\n- content_changed()        # 内容变更\n- dirty_state_changed(bool) # 脏状态切换\n- cursor_position_changed(int, int)  # 行, 列\n- file_loaded(str)         # 文件加载完成\n\n【交付要求】\n1. 输出完整可运行的单文件 code_editor_widget.py，包含独立演示 __main__ 块。\n2. 关键方法添加中文 docstring 与类型注解。\n3. 不使用任何已废弃的 Qt API，兼容 PySide2 ≥ 5.12。\n4. 代码结构清晰，用 # === 分隔符划分各功能区块。",
+      "notes": "",
+      "updated_at": "2026-08-02 16:19:35"
+    },
+    {
+      "id": "1785635614",
+      "title": "接收插件数据",
+      "category": "编程协同",
+      "tags": "",
+      "prompt": "下一个功能：根据我提供的代码;// 通过 Service Worker 转发数据给 PySide 服务端\nfunction sendFilesToPySide(filesData) {\n  if (Array.isArray(filesData) && filesData.length > 0) {\n    chrome.runtime.sendMessage({\n      type: \"SEND_WS_DATA\",\n      payload: {\n        action: \"save_files_batch\",\n        files: filesData\n      }\n    }, (res) => {\n      if (res && res.status === \"error\") {\n        console.warn(\"[Extension] 发送数据失败:\", res.message);\n      }\n    });\n  }\n} 接收插件发送过来的数据，直接保存到反馈结果中。根据解析规则，将反馈结果解析到结果解析：控件中。现在还没有解析规则，用一个空函数直接透传。上述功能要按照模块化单体架构构建，缺少的文件模块可以添加。",
+      "notes": "",
+      "updated_at": "2026-08-02 09:53:34"
+    },
+    {
       "id": "1785540313",
       "title": "base64解析",
       "category": "编程协同",
@@ -48,9 +66,9 @@
       "title": "python文件浏览器描述2",
       "category": "编程协同",
       "tags": "",
-      "prompt": "你是一个专业的 Python / PySide2 桌面端开发专家。请为我设计并实现一个工业级的文件浏览控件组件 `FileBrowserWidget`。\n\n【详细架构要求】：\n1. 核心架构：\n   - 采用 MVC 模式，基于 QFileSystemModel 和 QTreeView 实现。\n   - 不阻塞主 UI 线程，利用 QFileSystemModel 的异步文件加载特性。\n\n2. UI 布局与外观：\n   - 采用 QVBoxLayout 主布局。\n   - 顶部地址栏：[上一级按钮] + [当前路径 LineEdit] + [刷新按钮] + [实时搜索/过滤 LineEdit]。\n   - 中间主体：QTreeView，默认只显示“名称”列（可配置是否显示大小/修改时间）。\n   - 默认所有节点展开，加载所有文件和文件夹。\n   - 支持设置自定义根目录（Root Path）。\n\n3. 交互与功能：\n   - 地址栏输入合法路径按回车可直接跳转；输入非法路径时保持原状并提示。\n   - 文件过滤：支持按扩展名（如 *.py, *.json, *.txt）动态过滤文件。\n   - 右键快捷菜单（QMenu）：包含“在系统文件管理器中打开”、“复制绝对路径”、“新建文件夹”、“删除”等常用右键菜单选项。\n   - 快捷拓展：支持开启/关闭文件拖拽（Drag & Drop）属性接口。\n\n4. 信号与接口暴露：\n   - `file_selected = Signal(str)`：单选文件事件\n   - `file_double_clicked = Signal(str)`：双击文件事件\n   - `dir_changed = Signal(str)`：当前浏览目录切换事件\n\n【交付物】：\n- 包含完整 imports 和逻辑的单一 Python 文件，使用 PySide2。\n- 代码必须遵循 Python 面向对象规范，方法职责单一，关键逻辑有注释。\n- 提供 `if __name__ == '__main__':` 运行测试代码，建立一个带有简单预览区域的主窗口展示该控件的信号联动。",
+      "prompt": "删除所有tab中的控件和功能。  你是一个专业的 Python / PySide2 桌面端开发专家。请为我设计并实现一个工业级的文件浏览控件组件 `FileBrowser`。\n 放置在tab1中\n【详细架构要求】：\n1. 核心架构：\n   - \n   - 不阻塞主 UI 线程，\n\n2. UI 布局与外观：\n   - \n   - 顶部地址栏：[上一级按钮] + [当前路径 LineEdit] + [刷新按钮] + [实时搜索/过滤 LineEdit]。\n   - 中间主体：默认只显示“名称”列（可配置是否显示大小/修改时间）。\n   - 默认所有节点展开，加载所有文件和文件夹。\n   - 支持设置自定义根目录（Root Path）。\n\n3. 交互与功能：\n   - 地址栏输入合法路径按回车可直接跳转；输入非法路径时保持原状并提示。\n   - 文件过滤：支持按扩展名（如 *.py, *.json, *.txt）动态过滤文件。\n   - 右键快捷菜单（QMenu）：包含“在系统文件管理器中打开”、“复制绝对路径”、“新建文件夹”、“删除”等常用右键菜单选项。\n   - 快捷拓展：支持开启/关闭文件拖拽（Drag & Drop）属性接口。\n\n\n===============================\n你是一个专业的 Python / PySide2 桌面端开发专家。请为我设计并实现一个工业级的文件浏览控件组件 `FileBrowserWidget`。\n\n【详细架构要求】：\n1. 核心架构：\n   - 采用 MVC 模式，基于 QFileSystemModel 和 QTreeView 实现。\n   - 不阻塞主 UI 线程，利用 QFileSystemModel 的异步文件加载特性。\n\n2. UI 布局与外观：\n   - 采用 QVBoxLayout 主布局。\n   - 顶部地址栏：[上一级按钮] + [当前路径 LineEdit] + [刷新按钮] + [实时搜索/过滤 LineEdit]。\n   - 中间主体：QTreeView，默认只显示“名称”列（可配置是否显示大小/修改时间）。\n   - 默认所有节点展开，加载所有文件和文件夹。\n   - 支持设置自定义根目录（Root Path）。\n\n3. 交互与功能：\n   - 地址栏输入合法路径按回车可直接跳转；输入非法路径时保持原状并提示。\n   - 文件过滤：支持按扩展名（如 *.py, *.json, *.txt）动态过滤文件。\n   - 右键快捷菜单（QMenu）：包含“在系统文件管理器中打开”、“复制绝对路径”、“新建文件夹”、“删除”等常用右键菜单选项。\n   - 快捷拓展：支持开启/关闭文件拖拽（Drag & Drop）属性接口。\n\n4. 信号与接口暴露：\n   - `file_selected = Signal(str)`：单选文件事件\n   - `file_double_clicked = Signal(str)`：双击文件事件\n   - `dir_changed = Signal(str)`：当前浏览目录切换事件\n\n【交付物】：\n- 包含完整 imports 和逻辑的单一 Python 文件，使用 PySide2。\n- 代码必须遵循 Python 面向对象规范，方法职责单一，关键逻辑有注释。\n- 提供 `if __name__ == '__main__':` 运行测试代码，建立一个带有简单预览区域的主窗口展示该控件的信号联动。",
       "notes": "",
-      "updated_at": "2026-07-30 18:02:23"
+      "updated_at": "2026-08-02 15:40:20"
     },
     {
       "id": "1785404898",
@@ -75,9 +93,9 @@
       "title": "程序界面描述",
       "category": "编程协同",
       "tags": "",
-      "prompt": "写一个pyside2框架的python程序。主界面大小为显示器的85%，居中显示。居中位置不包含底部工具栏。不要使用会压缩空白符的文本控件。 \n\n把窗体功能从main中剥离出来，单独放一个文件\n主窗体添加tab，用来保存其他控件\n\n第一个tab中给我按照输入一个网址开始解析报纸网站链接的功能，给我添加先关的控件。\n\n\n功能：\n\n",
+      "prompt": "写一个pyside2框架的python程序。主界面大小为显示器的85%，居中显示。居中位置不包含底部工具栏。不要使用会压缩空白符的文本控件。 \n主程序在py文件所在路径查找projectbuilder.png文件作为图标。\n把窗体功能从main中剥离出来，单独放一个文件\n主窗体添加tab，用来保存其他控件\n\n第一个tab中给我按照输入一个网址开始解析报纸网站链接的功能，给我添加先关的控件。\n\n\n功能：\n\n",
       "notes": "",
-      "updated_at": "2026-08-01 10:17:59"
+      "updated_at": "2026-08-02 15:21:45"
     },
     {
       "id": "1",
