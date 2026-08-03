@@ -1,0 +1,20 @@
+{
+  "manifest_version": 2,
+  "name": "Shadow DOM AI 助手",
+  "version": "2.1",
+  "description": "修复点击无反应问题",
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_end" 
+    }
+  ],
+  "permissions": [
+    "activeTab"
+  ]
+}

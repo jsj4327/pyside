@@ -1,4 +1,6 @@
+# modules/shell/application/shell_controller.py
 from shared.infrastructure.event_bus import event_bus
+
 
 class ShellController:
     """Shell 模块的应用层控制器，负责业务逻辑、状态管理与事件编排"""
@@ -10,6 +12,8 @@ class ShellController:
         event_bus.subscribe("bridge:client_status", self.handle_client_status)
         event_bus.subscribe("plugin:data_processed", self.handle_plugin_data_processed)
         event_bus.subscribe("workspace:scan_finished", self.handle_workspace_scan_finished)
+        # 新增：订阅处理进度事件
+        event_bus.subscribe("request:progress", self.handle_progress)
 
     def handle_send_request(self, raw_text: str, framework: str):
         print(f"[ShellController] 触发请求发送，当前框架: {framework}")
@@ -54,7 +58,7 @@ class ShellController:
         print("[ShellController] 已将插件数据更新至反馈结果与结果解析控件")
 
     def request_scan_workspace(self, dir_path: str, exclude_exts: str, exclude_empty: bool):
-        """发起文件夹扫描请求，增加 exclude_empty 参数"""
+        """发起文件夹扫描请求"""
         print(f"[ShellController] 触发工作台扫描: {dir_path}, 过滤空文件: {exclude_empty}")
         event_bus.publish("workspace:scan_requested", {
             "dir_path": dir_path,
@@ -70,3 +74,17 @@ class ShellController:
         if self.view:
             self.view.update_workspace_scanned_files(success, message, file_list)
         print(f"[ShellController] 工作台扫描结果已同步至视图: {message}")
+
+    # ========================================
+    # 新增：进度处理
+    # ========================================
+
+    def handle_progress(self, data: dict):
+        """更新处理进度"""
+        if self.view and hasattr(self.view, 'update_progress'):
+            percent = data.get("percent", 0)
+            status = data.get("status", "处理中...")
+            self.view.update_progress(percent, status)
+        else:
+            # 降级处理：直接打印
+            print(f"[Progress] {data.get('status', '')} ({data.get('percent', 0)}%)")

@@ -157,7 +157,9 @@ class CodeDiff(QWidget):
     # ==========================================
     def _perform_compare(self):
         """执行比对"""
-        QMessageBox.warning(self, "警告标题", "警告内容")
+        
+        # 比对功能的是否执行测试
+        # QMessageBox.warning(self, "警告标题", "警告内容")
         left_content = self.viewer.left_editor.toPlainText()
         right_content = self.viewer.right_editor.toPlainText()
 

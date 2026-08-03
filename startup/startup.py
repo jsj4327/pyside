@@ -17,6 +17,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class DropZone(QFrame):
     """通用拖放接收区域"""
+    pathDropped = Signal(str)  # 新增信号：拖入文件后发送路径
+
     def __init__(self, hint_text: str, accept_mode: str = "all", parent=None):
         super().__init__(parent)
         self.setAcceptDrops(True)
@@ -73,6 +75,7 @@ class DropZone(QFrame):
             if self._validate(path):
                 self.current_path = path
                 self._update_preview(path)
+                self.pathDropped.emit(path)  # 抛出信号
 
     def _is_valid(self, mime: QMimeData) -> bool:
         urls = mime.urls()
@@ -102,9 +105,9 @@ class DropZone(QFrame):
                 available_width = self.width() - 20  # 减去边距
                 available_height = self.height() - 20
                 scaled_pixmap = pixmap.scaled(
-                    available_width, 
-                    available_height, 
-                    Qt.KeepAspectRatio, 
+                    available_width,
+                    available_height,
+                    Qt.KeepAspectRatio,
                     Qt.SmoothTransformation
                 )
                 self.preview_label.setPixmap(scaled_pixmap)
@@ -125,8 +128,8 @@ class AddAppDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("添加新程序")
-        # 增加弹窗高度以容纳描述字段
-        self.setFixedSize(420, 680)
+        # 增加弹窗高度以容纳名称输入框
+        self.setFixedSize(420, 730)
         self.result_data = None
 
         self.setStyleSheet("""
@@ -143,10 +146,31 @@ class AddAppDialog(QDialog):
         title.setStyleSheet("color: #FFFFFF; margin-bottom: 4px;")
         layout.addWidget(title)
 
+        # ========== 新增：自定义程序名称输入框 ==========
+        lbl_name = QLabel("程序名称（可自定义）")
+        lbl_name.setFont(QFont("Noto Sans CJK SC", 9))
+        layout.addWidget(lbl_name)
+        self.name_edit = QLineEdit()
+        self.name_edit.setPlaceholderText("拖入py文件将自动填充名称，也可以手动修改")
+        self.name_edit.setFixedHeight(38)
+        self.name_edit.setStyleSheet("""
+            QLineEdit {
+                background-color: rgba(255,255,255,0.08);
+                border: 1px solid rgba(255,255,255,0.12);
+                border-radius: 6px;
+                padding: 4px 10px;
+                color: white;
+            }
+            QLineEdit:focus { border: 1px solid #3B82F6; }
+        """)
+        layout.addWidget(self.name_edit)
+
         lbl_exe = QLabel("① 拖入 .py 文件")
         lbl_exe.setFont(QFont("Noto Sans CJK SC", 9))
         layout.addWidget(lbl_exe)
         self.drop_exe = DropZone("将 Python 脚本拖放到此处", accept_mode="exe")
+        # 绑定拖入信号，自动填充名称
+        self.drop_exe.pathDropped.connect(self._on_py_file_drop)
         layout.addWidget(self.drop_exe)
 
         lbl_icon = QLabel("② 拖入图标文件 (.png / .svg / .ico)")
@@ -155,13 +179,12 @@ class AddAppDialog(QDialog):
         self.drop_icon = DropZone("将图标拖放到此处（可选）", accept_mode="image")
         layout.addWidget(self.drop_icon)
 
-        # ====== 新增：分类选择下拉框 ======
+        # ====== 分类选择下拉框 ======
         lbl_cat = QLabel("③ 选择或输入分类")
         lbl_cat.setFont(QFont("Noto Sans CJK SC", 9))
         layout.addWidget(lbl_cat)
-        
+
         self.cat_combo = QComboBox()
-        # 设为可编辑，允许用户自定义输入新分类
         self.cat_combo.setEditable(True)
         self.cat_combo.lineEdit().setPlaceholderText("选择或输入新分类...")
         self.cat_combo.addItems(["我的脚本", "系统工具", "数据处理", "自动化", "开发测试", "其他"])
@@ -188,11 +211,11 @@ class AddAppDialog(QDialog):
         """)
         layout.addWidget(self.cat_combo)
 
-        # ====== 新增：中文说明输入框（多行） ======
+        # ====== 中文说明输入框（多行） ======
         lbl_desc = QLabel("④ 中文说明（可选，最多2行）")
         lbl_desc.setFont(QFont("Noto Sans CJK SC", 9))
         layout.addWidget(lbl_desc)
-        
+
         self.desc_edit = QTextEdit()
         self.desc_edit.setPlaceholderText("输入程序的中文说明...\n支持换行，最多显示2行")
         self.desc_edit.setFixedHeight(60)
@@ -237,6 +260,11 @@ class AddAppDialog(QDialog):
 
         layout.addLayout(btn_layout)
 
+    def _on_py_file_drop(self, file_path):
+        """拖入py文件，自动填充程序名称"""
+        filename = os.path.splitext(os.path.basename(file_path))[0]
+        self.name_edit.setText(filename)
+
     def _get_relative_path(self, absolute_path: str) -> str:
         """将绝对路径转换为相对于程序目录的路径"""
         try:
@@ -248,30 +276,33 @@ class AddAppDialog(QDialog):
     def _on_confirm(self):
         exe_path = self.drop_exe.current_path
         icon_path = self.drop_icon.current_path
-        
-        # 获取下拉框当前的文本（无论是选择的还是手打的）
+
+        # 获取自定义名称
+        app_name = self.name_edit.text().strip()
         category_text = self.cat_combo.currentText().strip()
         if not category_text:
             category_text = "未分类"
-        
+
         # 获取中文说明
         description = self.desc_edit.toPlainText().strip()
 
         if not exe_path:
             QMessageBox.warning(self, "提示", "请先拖入一个 Python 脚本文件 (.py)")
             return
+        if not app_name:
+            QMessageBox.warning(self, "提示", "请填写程序名称！")
+            return
 
         # 转换为相对路径
         relative_exe_path = self._get_relative_path(exe_path)
         relative_icon_path = self._get_relative_path(icon_path) if icon_path else None
 
-        app_name = os.path.splitext(os.path.basename(exe_path))[0]
         self.result_data = {
             "name": app_name,
             "icon": relative_icon_path,
             "exe_path": relative_exe_path,
             "category": category_text,
-            "description": description  # 添加中文说明
+            "description": description
         }
         self.accept()
 
@@ -313,7 +344,7 @@ class AppCard(QFrame):
         self.icon_label = QLabel()
         self.icon_label.setFixedSize(56, 56)  # 稍微缩小图标以腾出空间
         self.icon_label.setAlignment(Qt.AlignCenter)
-        
+
         # 处理图标路径（可能是相对路径）
         absolute_icon_path = self._get_absolute_path(icon_path) if icon_path else None
         if absolute_icon_path and os.path.isfile(absolute_icon_path):
@@ -344,7 +375,7 @@ class AppCard(QFrame):
         font = QFont("Noto Sans CJK SC", 9, QFont.Bold)  # 加粗字体
         self.desc_label.setFont(font)
         self.desc_label.setStyleSheet("color: #4A5568; background: transparent; line-height: 1.2;")
-        
+
         if description:
             # 限制显示2行，超出部分截断
             lines = description.split('\n')
@@ -388,7 +419,7 @@ class AppCard(QFrame):
         try:
             # 获取脚本所在目录
             script_dir = os.path.dirname(absolute_exe_path)
-            
+
             # 使用 subprocess.Popen 启动脚本，设置工作目录为脚本所在目录
             # 这样脚本中的 __file__ 和 os.getcwd() 都能正确指向脚本所在目录
             if sys.platform == "win32":
@@ -414,13 +445,13 @@ class AppCard(QFrame):
             QMenu::item { padding: 6px 20px; border-radius: 4px; }
             QMenu::item:selected { background-color: #3B82F6; color: white; }
         """)
-        
+
         open_action = menu.addAction("🚀 运行脚本")
         menu.addSeparator()
         delete_action = menu.addAction("🗑️ 删除记录")
-        
+
         action = menu.exec_(self.mapToGlobal(pos))
-        
+
         if action == open_action:
             self._launch_app()
         elif action == delete_action:
@@ -438,10 +469,10 @@ class LauncherWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Python 脚本启动器")
         self.current_view = self.VIEW_ALL
-        
+
         self.APPS = []
         self._load_data()
-        
+
         self._setup_window()
         self._setup_logo()  # 设置应用图标
         self._build_ui()
@@ -512,16 +543,16 @@ class LauncherWindow(QMainWindow):
         self.search_edit.setFixedHeight(38)
         # 修改搜索框样式，让占位文字颜色更浅
         self.search_edit.setStyleSheet("""
-            QLineEdit { 
-                background-color: rgba(255,255,255,0.08); 
-                border: 1px solid rgba(255,255,255,0.12); 
-                border-radius: 8px; 
-                padding: 0 15px; 
-                color: #E0E0E0; 
+            QLineEdit {
+                background-color: rgba(255,255,255,0.08);
+                border: 1px solid rgba(255,255,255,0.12);
+                border-radius: 8px;
+                padding: 0 15px;
+                color: #E0E0E0;
             }
-            QLineEdit:focus { 
-                border: 1px solid #3B82F6; 
-                background-color: rgba(255,255,255,0.12); 
+            QLineEdit:focus {
+                border: 1px solid #3B82F6;
+                background-color: rgba(255,255,255,0.12);
             }
             QLineEdit::placeholder {
                 color: rgba(255,255,255,0.3);
@@ -534,24 +565,24 @@ class LauncherWindow(QMainWindow):
         view_layout = QHBoxLayout(view_frame)
         view_layout.setContentsMargins(0, 0, 0, 0)
         view_layout.setSpacing(6)
-        
+
         self.btn_group = QButtonGroup(self)
         self.btn_group.setExclusive(True)
-        
+
         self.view_buttons = [
             self._create_view_button("全部", self.VIEW_ALL),
             self._create_view_button("分类", self.VIEW_CATEGORY),
             self._create_view_button("A-Z", self.VIEW_ALPHA),
         ]
-        
+
         for btn in self.view_buttons:
             self.btn_group.addButton(btn)
             view_layout.addWidget(btn)
             if btn.property("viewMode") == self.current_view:
                 btn.setChecked(True)
-                
+
         self.btn_group.buttonClicked.connect(self._on_view_changed)
-            
+
         layout.addWidget(view_frame)
         return top_bar
 
@@ -594,7 +625,7 @@ class LauncherWindow(QMainWindow):
             if any(app["name"] == dlg.result_data["name"] for app in self.APPS):
                 QMessageBox.warning(self, "重复添加", f"程序 '{dlg.result_data['name']}' 已存在！")
                 return
-            
+
             self.APPS.insert(0, dlg.result_data)
             self._save_data()
             self._refresh_grid(self.search_edit.text().strip().lower())
@@ -613,7 +644,7 @@ class LauncherWindow(QMainWindow):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        
+
         self.container = QWidget()
         self.main_container_layout = QVBoxLayout(self.container)
         self.main_container_layout.setContentsMargins(30, 10, 30, 30)
@@ -659,10 +690,10 @@ class LauncherWindow(QMainWindow):
 
                 for idx, app in enumerate(cat_apps):
                     card = AppCard(
-                        app["name"], 
-                        app.get("icon"), 
+                        app["name"],
+                        app.get("icon"),
                         app.get("exe_path"),
-                        app.get("description", "")  # 传递中文说明
+                        app.get("description", "")
                     )
                     card.delete_requested.connect(self._on_delete_app)
                     row, col = divmod(idx, self.COLS)
@@ -671,7 +702,7 @@ class LauncherWindow(QMainWindow):
                 self.main_container_layout.addWidget(grid_widget)
         else:
             sorted_apps = sorted(apps, key=lambda a: a["name"]) if self.current_view == self.VIEW_ALPHA else apps
-            
+
             grid_widget = QWidget()
             grid_layout = QGridLayout(grid_widget)
             grid_layout.setSpacing(12)
@@ -680,10 +711,10 @@ class LauncherWindow(QMainWindow):
 
             for idx, app in enumerate(sorted_apps):
                 card = AppCard(
-                    app["name"], 
-                    app.get("icon"), 
+                    app["name"],
+                    app.get("icon"),
                     app.get("exe_path"),
-                    app.get("description", "")  # 传递中文说明
+                    app.get("description", "")
                 )
                 card.delete_requested.connect(self._on_delete_app)
                 row, col = divmod(idx, self.COLS)
@@ -722,12 +753,12 @@ if __name__ == "__main__":
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
     app = QApplication(sys.argv)
-    
+
     font = QFont("Noto Sans CJK SC", 10)
     if not font.exactMatch():
         font = QFont("Microsoft YaHei", 10)
     app.setFont(font)
-    
+
     window = LauncherWindow()
     window.show()
     sys.exit(app.exec_())

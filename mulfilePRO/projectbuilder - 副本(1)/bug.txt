@@ -1,0 +1,25 @@
+请查看您当前 main_window.py 中的 _setup_ui 方法，确保里面只有以下这一处对 file_double_clicked 的连接：
+
+Python
+
+
+        # ---- Tab1: 文件浏览器 ----
+        self.file_browser = FileBrowser(root_path=os.path.expanduser("~"))
+        self.file_browser.path_changed.connect(self._on_path_changed)
+        
+        # 👇 确保整个 main_window.py 中，file_double_clicked 只有这唯一的一处连接！
+        self.file_browser.file_double_clicked.connect(self._on_file_double_clicked)
+        
+        self.file_browser.file_selected.connect(self._on_file_selected)
+        self.file_browser.folder_created.connect(self._on_folder_created)
+必须排查的要点：
+检查代码中绝对不能出现类似下面这行残留的代码：
+
+Python
+
+
+# ❌ 这行绝对不能有，如果有请删掉：
+self.file_browser.file_double_clicked.connect(self.code_diff.load_left_file)
+
+==========================================================================
+

@@ -1,5 +1,12 @@
 [
     {
+        "name": "projectbuilder",
+        "icon": "../mulfilePRO/projectbuilder/projectbuilder.png",
+        "exe_path": "../mulfilePRO/projectbuilder/main.py",
+        "category": "我的脚本",
+        "description": "程序构建器（重构）"
+    },
+    {
         "name": "desktopFileGen",
         "icon": "../python小程序项目/desktop文件生成器/image_101204885222667.png",
         "exe_path": "../python小程序项目/desktop文件生成器/desktopFileGen.py",

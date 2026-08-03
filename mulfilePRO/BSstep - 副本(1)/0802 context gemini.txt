@@ -1,0 +1,3043 @@
+项目根目录: /home/us/桌面/pyside/mulfilePRO/BigShrimp
+
+============================================================
+【目录结构树】
+├── config.json
+├── main.py
+├── modules
+│ ├── agent
+│ │ ├── __pycache__
+│ │ │ └── api.cpython-38.pyc
+│ │ ├── api.py
+│ │ ├── application
+│ │ │ ├── __pycache__
+│ │ │ │ └── handle_user_message.cpython-38.pyc
+│ │ │ ├── handle_user_message.py
+│ │ │ ├── run_agent.py
+│ │ │ └── stream_reply.py
+│ │ ├── domain
+│ │ │ ├── __pycache__
+│ │ │ │ └── prompt_template.cpython-38.pyc
+│ │ │ ├── message.py
+│ │ │ ├── plan.py
+│ │ │ ├── prompt_template.py
+│ │ │ ├── rules.py
+│ │ │ └── session.py
+│ │ ├── features
+│ │ │ ├── execute_tool_step
+│ │ │ └── plan_task
+│ │ ├── infrastructure
+│ │ │ ├── llm
+│ │ │ │ ├── openclaw_gateway.py
+│ │ │ │ └── providers
+│ │ │ ├── persistence
+│ │ │ │ ├── __pycache__
+│ │ │ │ │ └── prompt_store.cpython-38.pyc
+│ │ │ │ ├── prompt_store.py
+│ │ │ │ └── session_store.py
+│ │ │ └── prompt_engine.py
+│ │ └── ports.py
+│ ├── analysis
+│ │ ├── api.py
+│ │ ├── application
+│ │ │ ├── extract_outline.py
+│ │ │ ├── inspect_database.py
+│ │ │ └── scan_entry.py
+│ │ ├── domain
+│ │ │ ├── schema_info.py
+│ │ │ └── symbol.py
+│ │ ├── infrastructure
+│ │ │ ├── analyzer_service.py
+│ │ │ ├── db_inspector.py
+│ │ │ └── scanner_service.py
+│ │ └── ports.py
+│ ├── bridge
+│ │ ├── __pycache__
+│ │ │ └── api.cpython-38.pyc
+│ │ ├── api.py
+│ │ ├── application
+│ │ │ ├── dispatch_request.py
+│ │ │ └── handle_plugin_event.py
+│ │ ├── domain
+│ │ │ ├── __pycache__
+│ │ │ │ └── message.cpython-38.pyc
+│ │ │ ├── actions.py
+│ │ │ ├── message.py
+│ │ │ └── session.py
+│ │ ├── infrastructure
+│ │ │ ├── __pycache__
+│ │ │ │ └── websocket_server.cpython-38.pyc
+│ │ │ ├── json_codec.py
+│ │ │ ├── native_messaging
+│ │ │ └── websocket_server.py
+│ │ └── ports.py
+│ ├── sandbox
+│ │ ├── api.py
+│ │ ├── application
+│ │ │ ├── execute.py
+│ │ │ └── self_heal.py
+│ │ ├── domain
+│ │ │ ├── heal_policy.py
+│ │ │ └── job.py
+│ │ ├── infrastructure
+│ │ │ ├── executor_service.py
+│ │ │ └── self_heal_service.py
+│ │ └── ports.py
+│ ├── security
+│ │ ├── api.py
+│ │ ├── application
+│ │ │ ├── authorize.py
+│ │ │ └── record_audit.py
+│ │ ├── domain
+│ │ │ ├── approval.py
+│ │ │ ├── permission.py
+│ │ │ └── policy.py
+│ │ ├── infrastructure
+│ │ │ ├── audit_log.py
+│ │ │ └── secret_store.py
+│ │ └── ports.py
+│ ├── shell
+│ │ ├── __pycache__
+│ │ │ └── main_window.cpython-38.pyc
+│ │ ├── api.py
+│ │ ├── components
+│ │ │ ├── code_editor
+│ │ │ │ ├── __pycache__
+│ │ │ │ │ └── python_highlighter.cpython-38.pyc
+│ │ │ │ └── python_highlighter.py
+│ │ │ ├── diff_viewer
+│ │ │ └── terminal
+│ │ ├── dialogs
+│ │ │ ├── approval_dialog.py
+│ │ │ └── settings_dialog.py
+│ │ ├── main_window.py
+│ │ ├── panels
+│ │ │ ├── agent_chat_panel.py
+│ │ │ ├── project_tree_panel.py
+│ │ │ └── runner_panel.py
+│ │ └── presenters
+│ │ ├── agent_presenter.py
+│ │ ├── editor_presenter.py
+│ │ ├── project_presenter.py
+│ │ └── runner_presenter.py
+│ └── workspace
+│ ├── __pycache__
+│ │ └── api.cpython-38.pyc
+│ ├── api.py
+│ ├── application
+│ │ ├── __pycache__
+│ │ │ └── file_io.cpython-38.pyc
+│ │ ├── file_io.py
+│ │ ├── open_project.py
+│ │ └── scaffold_from_text.py
+│ ├── domain
+│ │ ├── __pycache__
+│ │ │ ├── code_text.cpython-38.pyc
+│ │ │ └── path_rules.cpython-38.pyc
+│ │ ├── arch_tree.py
+│ │ ├── code_text.py
+│ │ ├── path_rules.py
+│ │ ├── project.py
+│ │ ├── scaffold_plan.py
+│ │ └── tab_state.py
+│ ├── features
+│ │ ├── apply_scaffold
+│ │ ├── parse_architecture_text
+│ │ ├── plan_scaffold
+│ │ └── preview_scaffold
+│ ├── infrastructure
+│ │ ├── __pycache__
+│ │ │ └── local_fs.cpython-38.pyc
+│ │ ├── file_io_service.py
+│ │ ├── local_fs.py
+│ │ └── templates
+│ └── ports.py
+├── output_codes
+├── pyproject.toml
+├── requirements.txt
+├── resources
+│ ├── icons
+│ └── qss
+│ └── dark_style.qss
+└── shared
+├── base
+│ └── observable.py
+├── config
+│ ├── ai_config.py
+│ └── app_config.py
+├── events
+│ ├── agent_events.py
+│ ├── sandbox_events.py
+│ └── workspace_events.py
+├── infrastructure
+│ ├── command_handler.py
+│ ├── event_bus.py
+│ └── qsettings_store.py
+└── kernel
+├── errors.py
+├── ids.py
+└── result.py
+
+============================================================
+【所有文件绝对路径列表】
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/config.json
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/main.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/pyproject.toml
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/requirements.txt
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/workspace/api.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/workspace/ports.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/workspace/__pycache__/api.cpython-38.pyc
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/workspace/infrastructure/file_io_service.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/workspace/infrastructure/local_fs.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/workspace/infrastructure/__pycache__/local_fs.cpython-38.pyc
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/workspace/application/file_io.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/workspace/application/open_project.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/workspace/application/scaffold_from_text.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/workspace/application/__pycache__/file_io.cpython-38.pyc
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/workspace/domain/arch_tree.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/workspace/domain/code_text.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/workspace/domain/path_rules.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/workspace/domain/project.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/workspace/domain/scaffold_plan.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/workspace/domain/tab_state.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/workspace/domain/__pycache__/code_text.cpython-38.pyc
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/workspace/domain/__pycache__/path_rules.cpython-38.pyc
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/shell/api.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/shell/main_window.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/shell/__pycache__/main_window.cpython-38.pyc
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/shell/dialogs/approval_dialog.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/shell/dialogs/settings_dialog.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/shell/presenters/agent_presenter.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/shell/presenters/editor_presenter.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/shell/presenters/project_presenter.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/shell/presenters/runner_presenter.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/shell/components/code_editor/python_highlighter.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/shell/components/code_editor/__pycache__/python_highlighter.cpython-38.pyc
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/shell/panels/agent_chat_panel.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/shell/panels/project_tree_panel.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/shell/panels/runner_panel.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/sandbox/api.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/sandbox/ports.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/sandbox/infrastructure/executor_service.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/sandbox/infrastructure/self_heal_service.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/sandbox/application/execute.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/sandbox/application/self_heal.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/sandbox/domain/heal_policy.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/sandbox/domain/job.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/agent/api.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/agent/ports.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/agent/__pycache__/api.cpython-38.pyc
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/agent/infrastructure/prompt_engine.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/agent/infrastructure/persistence/prompt_store.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/agent/infrastructure/persistence/session_store.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/agent/infrastructure/persistence/__pycache__/prompt_store.cpython-38.pyc
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/agent/infrastructure/llm/openclaw_gateway.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/agent/application/handle_user_message.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/agent/application/run_agent.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/agent/application/stream_reply.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/agent/application/__pycache__/handle_user_message.cpython-38.pyc
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/agent/domain/message.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/agent/domain/plan.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/agent/domain/prompt_template.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/agent/domain/rules.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/agent/domain/session.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/agent/domain/__pycache__/prompt_template.cpython-38.pyc
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/security/api.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/security/ports.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/security/infrastructure/audit_log.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/security/infrastructure/secret_store.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/security/application/authorize.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/security/application/record_audit.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/security/domain/approval.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/security/domain/permission.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/security/domain/policy.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/analysis/api.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/analysis/ports.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/analysis/infrastructure/analyzer_service.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/analysis/infrastructure/db_inspector.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/analysis/infrastructure/scanner_service.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/analysis/application/extract_outline.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/analysis/application/inspect_database.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/analysis/application/scan_entry.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/analysis/domain/schema_info.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/analysis/domain/symbol.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/bridge/api.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/bridge/ports.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/bridge/__pycache__/api.cpython-38.pyc
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/bridge/infrastructure/json_codec.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/bridge/infrastructure/websocket_server.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/bridge/infrastructure/__pycache__/websocket_server.cpython-38.pyc
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/bridge/application/dispatch_request.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/bridge/application/handle_plugin_event.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/bridge/domain/actions.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/bridge/domain/message.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/bridge/domain/session.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/modules/bridge/domain/__pycache__/message.cpython-38.pyc
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/resources/qss/dark_style.qss
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/shared/kernel/errors.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/shared/kernel/ids.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/shared/kernel/result.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/shared/config/ai_config.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/shared/config/app_config.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/shared/infrastructure/command_handler.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/shared/infrastructure/event_bus.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/shared/infrastructure/qsettings_store.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/shared/events/agent_events.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/shared/events/sandbox_events.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/shared/events/workspace_events.py
+/home/us/桌面/pyside/mulfilePRO/BigShrimp/shared/base/observable.py 阅读这个项目架构 
+BigShrimp 项目架构深度解析
+BigShrimp 是一个结构高度规范、采用模块化单体架构 (Modular Monolith) 与领域驱动设计 (Domain-Driven Design, DDD) / 洁净架构 (Clean Architecture) 思想构建的 Python 桌面应用程序（基于 PySide）。
+
+整个项目通过严密的目录划分，实现了高内聚、低耦合，各业务模块职责边界清晰，并具备完善的跨模块事件驱动机制和基础设施支持。
+
+一、 整体架构风格与分层设计
+项目采用了典型的双向解耦设计：横向按业务领域分模块，纵向在模块内部采用 Clean Architecture 分层。
+
+横向模块划分 (modules/): 将系统垂直切分为多个独立的业务边界（Bounded Contexts），包括工作区、用户界面、AI 智能体、安全隔离、沙箱执行、代码分析以及外部桥接。
+
+纵向分层结构 (模块内部): 每个核心业务模块内部通常包含以下标准目录：
+
+api.py: 模块对外暴露的统一公共接口（Façade），隔离内部实现。
+
+ports.py: 定义模块间的契约与接口。
+
+domain/: 纯业务领域层，包含实体、值对象和核心业务规则，不依赖任何外部框架或基础设施。
+
+application/: 应用服务层（用例层），负责编排业务流程和用例。
+
+infrastructure/: 基础设施层，处理外部交互（如文件系统读写、数据库存储、LLM 网关、WebSocket 服务等）。
+
+二、 核心模块详解
+1. Shell 模块 (modules/shell/) —— 呈现层与 GUI 交互
+负责整个 PySide 桌面端的用户界面与交互逻辑：
+
+main_window.py: 主窗口入口，统筹全局布局。
+
+panels/: 包含业务功能面板，如 agent_chat_panel.py（AI 对话面板）、project_tree_panel.py（项目树面板）、runner_panel.py（运行调试面板）。
+
+presenters/: 采用 MVP（Model-View-Presenter）模式，如 agent_presenter.py、editor_presenter.py、project_presenter.py 和 runner_presenter.py，用于解耦 UI 控件与业务逻辑。
+
+components/: 可复用UI组件，如自定义代码高亮器 (python_highlighter.py)、代码编辑器、终端等。
+
+dialogs/: 弹窗对话框（如权限审批 approval_dialog.py、设置 settings_dialog.py）。
+
+2. Workspace 模块 (modules/workspace/) —— 工作区与项目管理
+负责项目文件的管理与脚手架生成：
+
+Domain: 定义了项目结构树 (arch_tree.py)、代码文本 (code_text.py)、路径规则 (path_rules.py)、项目实体 (project.py)、脚手架计划 (scaffold_plan.py) 和标签状态 (tab_state.py)。
+
+Application: 处理文件 I/O、打开项目 (open_project.py)、根据文本生成脚手架 (scaffold_from_text.py)。
+
+Infrastructure: 本地文件系统操作 (local_fs.py) 和文件服务。
+
+3. Agent 模块 (modules/agent/) —— AI 智能体核心
+负责与大语言模型交互、处理用户意图、规划任务并执行：
+
+Domain: 定义消息 (message.py)、计划 (plan.py)、提示词模板 (prompt_template.py)、规则 (rules.py) 和会话 (session.py)。
+
+Application: 核心交互逻辑，如处理用户消息 (handle_user_message.py)、运行 Agent (run_agent.py)、流式回复 (stream_reply.py)。
+
+Infrastructure:
+
+llm/: 包含大模型网关 (openclaw_gateway.py)。
+
+persistence/: 提示词存储 (prompt_store.py) 与会话存储 (session_store.py)。
+
+prompt_engine.py: 提示词组装与渲染引擎。
+
+4. Sandbox 模块 (modules/sandbox/) —— 沙箱执行与自愈
+负责代码的安全执行及自动错误修复：
+
+Domain: 治愈策略 (heal_policy.py) 与作业任务 (job.py)。
+
+Application: 执行 (execute.py) 与自我修复 (self_heal.py) 逻辑。
+
+Infrastructure: 执行器服务 (executor_service.py) 与自愈服务 (self_heal_service.py)。
+
+5. Security 模块 (modules/security/) —— 安全与审计
+负责权限管控与审计日志：
+
+Domain: 审批流程 (approval.py)、权限控制 (permission.py)、安全策略 (policy.py)。
+
+Application: 鉴权 (authorize.py) 与记录审计 (record_audit.py)。
+
+Infrastructure: 审计日志 (audit_log.py) 与敏感信息/密钥存储 (secret_store.py).
+
+6. Analysis 模块 (modules/analysis/) —— 代码与数据库分析
+负责静态代码分析与数据库检查：
+
+Application: 提取大纲 (extract_outline.py)、检查数据库 (inspect_database.py)、扫描入口 (scan_entry.py)。
+
+Domain: 模式信息 (schema_info.py) 与符号定义 (symbol.py)。
+
+Infrastructure: 分析器服务 (analyzer_service.py)、数据库检查器 (db_inspector.py)、扫描服务 (scanner_service.py)。
+
+7. Bridge 模块 (modules/bridge/) —— 外部通信桥接
+负责与外部插件、浏览器扩展或其它进程进行实时通信：
+
+Infrastructure: WebSocket 服务 (websocket_server.py)、JSON 编解码 (json_codec.py)、Native Messaging。
+
+Application: 分发请求 (dispatch_request.py)、处理插件事件 (handle_plugin_event.py)。
+
+三: 共享内核与基础设施 (shared/)
+shared 目录构成了整个单体应用的通用基石，供所有模块共同调用：
+
+kernel/: 核心基础原语，包含统一错误定义 (errors.py)、全局 ID 生成 (ids.py)、标准结果包装 (result.py)。
+
+infrastructure/:
+
+event_bus.py: 全局事件总线，实现模块间的松耦合异步/同步通信。
+
+command_handler.py: 命令处理器。
+
+qsettings_store.py: 基于 Qt QSettings 的配置持久化存储。
+
+config/: 应用配置 (app_config.py) 与 AI 配置 (ai_config.py)。
+
+events/: 定义了跨模块的领域事件（如 agent_events.py、sandbox_events.py、workspace_events.py）。
+
+base/: 基础类库，如可观察对象 (observable.py)。
+
+四、 架构优势总结
+高度模块化与可扩展性: 每一个功能域（如 Agent、Sandbox、Security）完全内聚。如果未来需要将某部分剥离为独立微服务或独立进程，其清晰的 ports.py 和 api.py 边界能够将改动降到最低。
+
+职责分离清晰: UI 呈现（Shell）、核心逻辑（Domain/Application）与底层实现（Infrastructure）严格隔离，极大地提升了单元测试的可行性与代码的可维护性。
+
+强大的跨模块协作能力: 通过 shared/infrastructure/event_bus.py 与事件定义，各个独立模块之间能够以事件驱动的方式安全交互，避免了严重的循环依赖问题。
+
+按照这个架构，从ui开始构建，其他不涉的模块暂时不用，先给我最小化构建的建议，然后一步步扩展
+基于 BigShrimp 项目的模块化架构，从 UI（shell 模块）切入进行最小化构建（MVP）是一个非常明智的选择。这样可以先确保图形界面、全局样式和布局框架稳定运行，然后再逐步将底层业务模块“拼装”进去。
+
+以下是为您定制的最小化构建建议及后续的演进路线规划：
+
+一、 最小化构建建议（Shell-First MVP）
+在第一阶段，我们只保留应用主入口、基础设施的极简核心以及 shell 呈现层，其他业务模块（Agent、Sandbox、Security 等）暂时用空壳或占位符代替。
+
+1. 核心依赖与瘦身配置
+main.py: 作为唯一启动入口，负责初始化 QApplication、加载全局配置、应用 QSS 样式表，并实例化主窗口。
+
+shared/ 保留项:
+
+shared/infrastructure/event_bus.py: 建立全局事件总线（即使初期没有模块间通信，也预先留好底座）。
+
+shared/config/app_config.py: 用于读取基础配置（如窗口大小、主题）。
+
+modules/shell/ 保留项:
+
+main_window.py: 主窗口框架。
+
+基础的面板占位符（如空的 agent_chat_panel.py 和 project_tree_panel.py），确保主界面布局（Splitter / Dock）能够正常渲染。
+
+2. 第一阶段启动代码的核心骨架
+Python
+# main.py 最小化雏形示例
+import sys
+from PySide2.QtWidgets import QApplication
+from modules.shell.main_window import MainWindow
+
+def main():
+    app = QApplication(sys.argv)
+    
+    # 加载全局 QSS 样式
+    try:
+        with open("resources/qss/dark_style.qss", "r") as f:
+            app.setStyleSheet(f.read())
+    except FileNotFoundError:
+        pass
+
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()
+二、 逐步扩展路线图（Step-by-Step Expansion）
+当 UI 骨架稳定运行后，您可以按照以下顺序，像“拼积木”一样逐个把业务模块接入进来：
+
+Phase 1: 静态 UI 与布局固化 (当前阶段)
+
+实现 MainWindow 的多面板分割布局（左侧项目树、中间代码编辑器、右侧 AI 对话面板）。
+
+确保 dark_style.qss 能够完美渲染所有基础控件。
+
+Phase 2: 接入 Workspace（工作区与文件浏览）
+
+引入 modules/workspace 模块。
+
+将 project_tree_panel.py 与 Workspace 的 local_fs.py 联通，实现真正的本地文件夹打开、文件树渲染与双击打开文件。
+
+Phase 3: 接入 Code Editor（代码编辑器与高亮）
+
+完善 modules/shell/components/code_editor/。
+
+接入 python_highlighter.py，让编辑器具备基础的 Python 语法高亮能力。
+
+Phase 4: 接入 Agent 与事件总线（AI 交互能力）
+
+引入 modules/agent 模块。
+
+通过 shared/infrastructure/event_bus.py，将 agent_chat_panel.py 的用户输入发送给 Agent 核心，实现前端与 AI 逻辑的解耦通信。
+
+Phase 5: 逐步解锁高级模块（Sandbox / Security / Analysis）
+
+引入沙箱执行面板（runner_panel.py）与安全审批弹窗（approval_dialog.py），完成整个工具链的闭环。
+
+现在，您希望我们优先把 Phase 1（主窗口与基础布局框架） 的最简可用代码实现出来吗？
+
+去掉qss加载，现在还没有。MainWindow按照图示构建。主界面大小为显示器的85%，居中显示。居中位置不包含底部工具栏。不要使用会压缩空白符的文本控件。
+以下是按照您的图示和各项约束条件实现的 modules/shell/main_window.py 完整代码。代码中已使用 QPlainTextEdit 替代普通文本控件以完整保留空白符，通过 QApplication.primaryScreen().availableGeometry() 实现了基于可用屏幕（自动排除底部任务栏/工具栏）的 85% 居中缩放，且去除了 QSS 加载逻辑。
+
+Python
+import sys
+from PySide2.QtCore import Qt
+from PySide2.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QTabWidget,
+    QVBoxLayout,
+    QLabel,
+    QPlainTextEdit,
+    QComboBox,
+    QPushButton,
+    QSplitter
+)
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("BigShrimp - 请求台")
+        self.init_ui()
+        self.center_window()
+
+    def init_ui(self):
+        # 根节点：QTabWidget，包含左右两个主 Tab
+        self.tab_widget = QTabWidget()
+        self.setCentralWidget(self.tab_widget)
+
+        # --- Tab 1: 请求台 ---
+        self.tab_request = QWidget()
+        self.init_request_tab()
+        self.tab_widget.addTab(self.tab_request, "请求台")
+
+        # --- Tab 2: 暂留 ---
+        self.tab_placeholder = QWidget()
+        placeholder_layout = QVBoxLayout(self.tab_placeholder)
+        placeholder_label = QLabel("暂留页面")
+        placeholder_label.setAlignment(Qt.AlignCenter)
+        placeholder_layout.addWidget(placeholder_label)
+        self.tab_widget.addTab(self.tab_placeholder, "暂留")
+
+    def init_request_tab(self):
+        # 使用 QSplitter 实现左右两栏布局，保持图示结构
+        main_splitter = QSplitter(Qt.Horizontal, self.tab_request)
+        
+        # --- 左侧列 ---
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(5, 5, 5, 5)
+
+        left_layout.addWidget(QLabel("原始提示词："))
+        self.input_edit = QPlainTextEdit()
+        left_layout.addWidget(self.input_edit)
+
+        left_layout.addWidget(QLabel("提示词处理框架（下拉选择）："))
+        self.framework_combo = QComboBox()
+        self.framework_combo.addItems(["默认框架", "框架选项A", "框架选项B"])
+        left_layout.addWidget(self.framework_combo)
+
+        left_layout.addWidget(QLabel("框架预览："))
+        self.framework_preview_edit = QPlainTextEdit()
+        left_layout.addWidget(self.framework_preview_edit)
+
+        left_layout.addWidget(QLabel("反馈结果："))
+        self.raw_result_edit = QPlainTextEdit()
+        left_layout.addWidget(self.raw_result_edit)
+
+        # --- 右侧列 ---
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(5, 5, 5, 5)
+
+        right_layout.addWidget(QLabel("最终提示词"))
+        self.final_preview_edit = QPlainTextEdit()
+        right_layout.addWidget(self.final_preview_edit)
+
+        self.send_button = QPushButton("发送请求")
+        right_layout.addWidget(self.send_button)
+
+        right_layout.addWidget(QLabel("结果解析："))
+        self.parsed_result_edit = QPlainTextEdit()
+        right_layout.addWidget(self.parsed_result_edit)
+
+        # 将左右两侧加入分割器
+        main_splitter.addWidget(left_widget)
+        main_splitter.addWidget(right_widget)
+        main_splitter.setSizes([600, 600])
+
+        # 设置 Tab1 的整体布局
+        tab_layout = QVBoxLayout(self.tab_request)
+        tab_layout.addWidget(main_splitter)
+
+    def center_window(self):
+        # 获取可用屏幕几何尺寸（自动排除底部任务栏/工具栏）
+        screen = QApplication.primaryScreen().availableGeometry()
+        width = int(screen.width() * 0.85)
+        height = int(screen.height() * 0.85)
+        self.resize(width, height)
+        
+        # 计算居中坐标
+        x = screen.x() + (screen.width() - width) // 2
+        y = screen.y() + (screen.height() - height) // 2
+        self.move(x, y)
+给我main文件代码
+Python
+import sys
+from PySide2.QtWidgets import QApplication
+from modules.shell.main_window import MainWindow
+
+def main():
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()
+给我main文件代码
+Python
+import sys
+from PySide2.QtWidgets import QApplication
+from modules.shell.main_window import MainWindow
+
+def main():
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()
+开始扩展功能
+太棒了！UI 骨架（Phase 1）已经稳固建立。按照 Modular Monolith（模块化单体） 架构的演进路线，接下来我们进入 Phase 4：基础设施与事件总线接入（Event-Bus & Core Wiring）。
+
+为了让 UI 层（shell）与未来的核心业务逻辑（如 agent、workspace 等）保持完全解耦，我们首先需要实现全局的 EventBus（事件总线），并将“发送请求”按钮和下拉菜单通过事件驱动串联起来。
+
+第一步：实现全局事件总线 (shared/infrastructure/event_bus.py)
+事件总线负责模块间的发布-订阅通信，避免模块之间产生直接的代码强耦合。
+
+Python
+# shared/infrastructure/event_bus.py
+from PySide2.QtCore import QObject, Signal
+
+class EventBus(QObject):
+    # 定义全局通用的事件信号，携带字典或任意数据
+    event_published = Signal(str, dict)
+
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(EventBus, cls).__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+
+    def __init__(self):
+        if self._initialized:
+            return
+        super().__init__()
+        self._initialized = True
+        self._subscribers = {}
+
+    def publish(self, event_name: str, data: dict = None):
+        """发布事件"""
+        if data is None:
+            data = {}
+        # 既可以通过 Qt 信号分发，也可以通过内部回调分发
+        self.event_published.emit(event_name, data)
+        if event_name in self._subscribers:
+            for callback in self._subscribers[event_name]:
+                callback(data)
+
+    def subscribe(self, event_name: str, callback):
+        """订阅事件"""
+        if event_name not in self._subscribers:
+            self._subscribers[event_name] = []
+        if callback not in self._subscribers[event_name]:
+            self._subscribers[event_name].append(callback)
+
+# 全局单例
+event_bus = EventBus()
+第二步：改造 MainWindow 接入事件分发
+我们在 MainWindow 中引入 event_bus，当用户点击“发送请求”或切换框架时，不再写死在 UI 里，而是向总线广播事件。这样后续编写 modules/agent 时，只需要监听对应的事件即可。
+
+更新后的 modules/shell/main_window.py 代码：
+
+Python
+# modules/shell/main_window.py
+import sys
+from PySide2.QtCore import Qt
+from PySide2.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QTabWidget,
+    QVBoxLayout,
+    QLabel,
+    QPlainTextEdit,
+    QComboBox,
+    QPushButton,
+    QSplitter
+)
+from shared.infrastructure.event_bus import event_bus
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("BigShrimp - 请求台")
+        self.init_ui()
+        self.center_window()
+        self.bind_events()
+
+    def init_ui(self):
+        self.tab_widget = QTabWidget()
+        self.setCentralWidget(self.tab_widget)
+
+        # --- Tab 1: 请求台 ---
+        self.tab_request = QWidget()
+        self.init_request_tab()
+        self.tab_widget.addTab(self.tab_request, "请求台")
+
+        # --- Tab 2: 暂留 ---
+        self.tab_placeholder = QWidget()
+        placeholder_layout = QVBoxLayout(self.tab_placeholder)
+        placeholder_label = QLabel("暂留页面")
+        placeholder_label.setAlignment(Qt.AlignCenter)
+        placeholder_layout.addWidget(placeholder_label)
+        self.tab_widget.addTab(self.tab_placeholder, "暂留")
+
+    def init_request_tab(self):
+        main_splitter = QSplitter(Qt.Horizontal, self.tab_request)
+        
+        # --- 左侧列 ---
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(5, 5, 5, 5)
+
+        left_layout.addWidget(QLabel("原始提示词："))
+        self.input_edit = QPlainTextEdit()
+        left_layout.addWidget(self.input_edit)
+
+        left_layout.addWidget(QLabel("提示词处理框架（下拉选择）："))
+        self.framework_combo = QComboBox()
+        self.framework_combo.addItems(["默认框架", "框架选项A", "框架选项B"])
+        left_layout.addWidget(self.framework_combo)
+
+        left_layout.addWidget(QLabel("框架预览："))
+        self.framework_preview_edit = QPlainTextEdit()
+        left_layout.addWidget(self.framework_preview_edit)
+
+        left_layout.addWidget(QLabel("反馈结果："))
+        self.raw_result_edit = QPlainTextEdit()
+        left_layout.addWidget(self.raw_result_edit)
+
+        # --- 右侧列 ---
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(5, 5, 5, 5)
+
+        right_layout.addWidget(QLabel("最终提示词"))
+        self.final_preview_edit = QPlainTextEdit()
+        right_layout.addWidget(self.final_preview_edit)
+
+        self.send_button = QPushButton("发送请求")
+        right_layout.addWidget(self.send_button)
+
+        right_layout.addWidget(QLabel("结果解析："))
+        self.parsed_result_edit = QPlainTextEdit()
+        right_layout.addWidget(self.parsed_result_edit)
+
+        main_splitter.addWidget(left_widget)
+        main_splitter.addWidget(right_widget)
+        main_splitter.setSizes([600, 600])
+
+        tab_layout = QVBoxLayout(self.tab_request)
+        tab_layout.addWidget(main_splitter)
+
+    def bind_events(self):
+        """绑定控件交互与事件分发"""
+        self.send_button.clicked.connect(self.on_send_clicked)
+        self.framework_combo.currentTextChanged.connect(self.on_framework_changed)
+
+    def on_send_clicked(self):
+        raw_text = self.input_edit.toPlainText()
+        framework = self.framework_combo.currentText()
+        
+        # 通过事件总线广播“用户发起请求”事件
+        event_bus.publish("request:send_clicked", {
+            "raw_prompt": raw_text,
+            "framework": framework
+        })
+        
+        # 临时占位反馈
+        self.parsed_result_edit.setPlainText(f"已发送请求...\n当前选择框架: {framework}")
+
+    def on_framework_changed(self, framework_name: str):
+        # 广播框架变更事件
+        event_bus.publish("framework:changed", {"framework": framework_name})
+        self.framework_preview_edit.setPlainText(f"[{framework_name}] 对应的预览模板加载中...")
+
+    def center_window(self):
+        screen = QApplication.primaryScreen().availableGeometry()
+        width = int(screen.width() * 0.85)
+        height = int(screen.height() * 0.85)
+        self.resize(width, height)
+        
+        x = screen.x() + (screen.width() - width) // 2
+        y = screen.y() + (screen.height() - height) // 2
+        self.move(x, y)
+接下来，您希望优先接入哪个业务模块来响应这些事件？
+
+A. 接入 modules/agent（编写提示词引擎与大模型网关逻辑，处理 request:send_clicked 事件）
+
+B. 接入 modules/workspace（为界面增加项目文件树或本地配置管理）
+
+a
+太棒了！选择接入 modules/agent 模块。
+
+通过事件总线，我们可以让 shell 层与 agent 层完全解耦：UI 负责采集用户的原始提示词并广播事件，而 modules/agent 中的提示词引擎负责监听该事件、处理并组装提示词，最后将结果通过事件回传给 UI 呈现。
+
+第一步：实现 Agent 核心服务 (modules/agent/infrastructure/prompt_engine.py)
+该服务负责订阅前端的 request:send_clicked 与 framework:changed 事件，并在处理完成后发布 request:result_ready 事件。
+
+Python
+# modules/agent/infrastructure/prompt_engine.py
+from shared.infrastructure.event_bus import event_bus
+
+class AgentEngineService:
+    def __init__(self):
+        # 订阅 UI 层的事件
+        event_bus.subscribe("request:send_clicked", self.handle_request)
+        event_bus.subscribe("framework:changed", self.handle_framework_change)
+
+    def handle_framework_change(self, data: dict):
+        framework = data.get("framework", "")
+        # 后续可在此对接具体的提示词模板加载逻辑
+        print(f"[AgentEngine] 加载框架模板: {framework}")
+
+    def handle_request(self, data: dict):
+        raw_prompt = data.get("raw_prompt", "")
+        framework = data.get("framework", "")
+        
+        # 模拟 AI 提示词组装与沙箱/大模型预处理逻辑
+        final_prompt = f"--- [AI 提示词工程引擎] ---\n框架类型: {framework}\n原始内容:\n{raw_prompt}\n---------------------------"
+        parsed_result = f"请求已成功由 Agent 核心处理。\n- 字符数: {len(raw_prompt)}\n- 状态: 就绪，等待大模型网关响应..."
+
+        # 异步处理完成后，通过事件总线将结果发布回传给 UI
+        event_bus.publish("request:result_ready", {
+            "final_prompt": final_prompt,
+            "parsed_result": parsed_result
+        })
+
+# 创建单例实例以保证生命周期存活并完成事件监听注册
+agent_engine_service = AgentEngineService()
+第二步：让 MainWindow 监听处理结果
+更新 modules/shell/main_window.py，让其订阅 request:result_ready 事件，将 Agent 处理后的数据自动填入右侧的最终预览和结果解析框中：
+
+Python
+# modules/shell/main_window.py (追加订阅与槽函数)
+# ... [前面代码保持不变] ...
+
+    def bind_events(self):
+        """绑定控件交互与事件分发"""
+        self.send_button.clicked.connect(self.on_send_clicked)
+        self.framework_combo.currentTextChanged.connect(self.on_framework_changed)
+        
+        # 订阅 Agent 层返回的处理结果事件
+        event_bus.subscribe("request:result_ready", self.on_result_ready)
+
+    def on_send_clicked(self):
+        raw_text = self.input_edit.toPlainText()
+        framework = self.framework_combo.currentText()
+        
+        event_bus.publish("request:send_clicked", {
+            "raw_prompt": raw_text,
+            "framework": framework
+        })
+        
+        self.parsed_result_edit.setPlainText("正在发送至 Agent 核心处理...")
+
+    def on_framework_changed(self, framework_name: str):
+        event_bus.publish("framework:changed", {"framework": framework_name})
+        self.framework_preview_edit.setPlainText(f"[{framework_name}] 对应的模板预览加载中...")
+
+    def on_result_ready(self, data: dict):
+        """接收 Agent 处理完成的数据并更新 UI"""
+        self.final_preview_edit.setPlainText(data.get("final_prompt", ""))
+        self.parsed_result_edit.setPlainText(data.get("parsed_result", ""))
+
+# ... [其余代码保持不变] ...
+第三步：在程序启动时初始化 Agent 服务 (main.py)
+为了确保 AgentEngineService 能够正常加载并注册事件监听，需要在 main.py 中引入它：
+
+Python
+# main.py
+import sys
+from PySide2.QtWidgets import QApplication
+from modules.shell.main_window import MainWindow
+# 导入并初始化 Agent 核心服务，使其开始监听事件总线
+import modules.agent.infrastructure.prompt_engine
+
+def main():
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()
+现在，整个架构的 UI 呈现层 (shell) 与 AI 核心层 (agent) 已经通过事件总线 (event_bus) 成功解耦并打通。
+
+接下来，您希望继续接入大模型网关（如 openclaw_gateway.py）来对接真实的 LLM，还是接入 modules/workspace 来增加项目文件管理能力？
+
+我的程序逻辑是和一个chrome插件进行通信，从而和chat ai建立数据通路。参考逻辑如下：class BridgeServer(QObject):
+    """WebSocket 通信桥梁服务端"""
+
+    message_received = Signal(dict)
+
+    def __init__(self, port=9002, parent=None):
+        super().__init__(parent)
+        self.server = QWebSocketServer(
+            "PySideExtensionBridge", QWebSocketServer.NonSecureMode, self
+        )
+        self.clients = []
+
+        if self.server.listen(QHostAddress.LocalHost, port):
+            print(f"[WebSocket] 服务启动成功，监听端口: {port}")
+            self.server.newConnection.connect(self._on_new_connection)
+        else:
+            print(f"[WebSocket] 启动失败: {self.server.errorString()}")
+
+    def _on_new_connection(self):
+        client = self.server.nextPendingConnection()
+        client.textMessageReceived.connect(self._on_text_received)
+        client.disconnected.connect(lambda: self._on_disconnected(client))
+        self.clients.append(client)
+        print("[WebSocket] 浏览器插件已连接")
+
+    def _on_text_received(self, message):
+        try:
+            data = json.loads(message)
+            self.message_received.emit(data)
+        except json.JSONDecodeError:
+            print(f"[WebSocket] 无法解析的非 JSON 消息: {message}")
+
+    def _on_disconnected(self, client):
+        if client in self.clients:
+            self.clients.remove(client)
+            client.deleteLater()
+            print("[WebSocket] 浏览器插件已断开")
+
+    @Slot(str)
+    def send_to_extension(self, text_msg):
+        for client in self.clients:
+            client.sendTextMessage(text_msg)
+        print(f"[WebSocket] 已向插件发送文本指令: {text_msg}") 。
+这段参考逻辑非常契合项目结构中 modules/bridge/ 模块的定位。我们可以直接将该 WebSocket 服务封装进 modules/bridge/infrastructure/websocket_server.py 中，并通过前面建立的 event_bus 与整个系统（如 agent 模块和主界面）买通数据通路。
+
+这样，Chrome 插件传回的 Chat AI 数据可以自动上报给全局，而前端或 Agent 产生的指令也可以随时下发给浏览器插件。
+
+一、 落地桥接服务端代码
+将您的逻辑完整适配到 modules/bridge/infrastructure/websocket_server.py，并自动挂载事件总线监听：
+
+Python
+# modules/bridge/infrastructure/websocket_server.py
+import json
+from PySide2.QtCore import QObject, Signal, Slot
+from PySide2.QtWebSockets import QWebSocketServer, QWebSocket
+from PySide2.QtNetwork import QHostAddress
+from shared.infrastructure.event_bus import event_bus
+
+class BridgeServer(QObject):
+    """WebSocket 通信桥梁服务端"""
+
+    message_received = Signal(dict)
+
+    def __init__(self, port=9002, parent=None):
+        super().__init__(parent)
+        self.server = QWebSocketServer(
+            "PySideExtensionBridge", QWebSocketServer.NonSecureMode, self
+        )
+        self.clients = []
+
+        if self.server.listen(QHostAddress.LocalHost, port):
+            print(f"[WebSocket] 服务启动成功，监听端口: {port}")
+            self.server.newConnection.connect(self._on_new_connection)
+        else:
+            print(f"[WebSocket] 启动失败: {self.server.errorString()}")
+
+        # 订阅来自其他模块（如 agent 或 UI）的下发指令事件
+        event_bus.subscribe("bridge:send_to_extension", self._on_send_event)
+
+    def _on_new_connection(self):
+        client = self.server.nextPendingConnection()
+        client.textMessageReceived.connect(self._on_text_received)
+        client.disconnected.connect(lambda: self._on_disconnected(client))
+        self.clients.append(client)
+        print("[WebSocket] 浏览器插件已连接")
+
+    def _on_text_received(self, message):
+        try:
+            data = json.loads(message)
+            self.message_received.emit(data)
+            
+            # 通过全局事件总线分发插件传来的 Chat AI 数据
+            event_bus.publish("bridge:message_received", data)
+        except json.JSONDecodeError:
+            print(f"[WebSocket] 无法解析的非 JSON 消息: {message}")
+
+    def _on_disconnected(self, client):
+        if client in self.clients:
+            self.clients.remove(client)
+            client.deleteLater()
+            print("[WebSocket] 浏览器插件已断开")
+
+    def _on_send_event(self, data: dict):
+        text_msg = data.get("text", "")
+        if text_msg:
+            self.send_to_extension(text_msg)
+
+    @Slot(str)
+    def send_to_extension(self, text_msg):
+        for client in self.clients:
+            client.sendTextMessage(text_msg)
+        print(f"[WebSocket] 已向插件发送文本指令: {text_msg}")
+
+# 创建单例实例，确保在程序启动时即可监听 9002 端口并注册事件
+bridge_server = BridgeServer()
+二、 在主入口初始化桥接服务
+在 main.py 中引入该 WebSocket 服务，使其随着应用生命周期一同启动：
+
+Python
+# main.py
+import sys
+from PySide2.QtWidgets import QApplication
+from modules.shell.main_window import MainWindow
+import modules.agent.infrastructure.prompt_engine
+import modules.bridge.infrastructure.websocket_server  # 启动 WebSocket 桥接服务
+
+def main():
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()
+三、 数据通路联动效果
+上行（Chrome 插件 -> PySide 客户端）：
+
+插件向 ws://localhost:9002 发送抓取或交互的 Chat AI 数据。
+
+服务端收到后触发 bridge:message_received 事件，任何订阅该事件的面板（例如结果解析区）都可以实时捕获并展示 AI 返回的内容。
+
+下行（PySide 客户端 -> Chrome 插件）：
+
+当用户点击“发送请求”时，可以通过发布事件 event_bus.publish("bridge:send_to_extension", {"text": "你的指令"})，将组装好的提示词自动推给浏览器插件，驱动 Chat AI 进行对话。
+
+为ui界面添加一个底部的状态栏目，在程序加载的时候，显示本地9002服务是否已经开启
+为了实现底部的状态栏并实时显示本地 9002 服务的开启状态，我们可以通过事件总线 (event_bus) 让 BridgeServer 在启动时向全局广播其运行状态，然后由 MainWindow 的状态栏进行监听和展示。
+
+以下是具体的修改方案：
+
+第一步：修改 BridgeServer 增加状态广播
+在 modules/bridge/infrastructure/websocket_server.py 中，在监听端口后立即通过事件总线发布启动成功或失败的结果：
+
+Python
+# modules/bridge/infrastructure/websocket_server.py
+import json
+from PySide2.QtCore import QObject, Signal, Slot
+from PySide2.QtWebSockets import QWebSocketServer, QWebSocket
+from PySide2.QtNetwork import QHostAddress
+from shared.infrastructure.event_bus import event_bus
+
+class BridgeServer(QObject):
+    """WebSocket 通信桥梁服务端"""
+
+    message_received = Signal(dict)
+
+    def __init__(self, port=9002, parent=None):
+        super().__init__(parent)
+        self.server = QWebSocketServer(
+            "PySideExtensionBridge", QWebSocketServer.NonSecureMode, self
+        )
+        self.clients = []
+
+        # 尝试监听端口并记录状态
+        self.is_running = self.server.listen(QHostAddress.LocalHost, port)
+        if self.is_running:
+            print(f"[WebSocket] 服务启动成功，监听端口: {port}")
+            self.server.newConnection.connect(self._on_new_connection)
+        else:
+            print(f"[WebSocket] 启动失败: {self.server.errorString()}")
+
+        # 无论成功与否，向全局事件总线广播服务器状态
+        event_bus.publish("bridge:server_status", {
+            "is_running": self.is_running,
+            "port": port,
+            "error": "" if self.is_running else self.server.errorString()
+        })
+
+        # 订阅来自其他模块的下发指令事件
+        event_bus.subscribe("bridge:send_to_extension", self._on_send_event)
+
+    def _on_new_connection(self):
+        client = self.server.nextPendingConnection()
+        client.textMessageReceived.connect(self._on_text_received)
+        client.disconnected.connect(lambda: self._on_disconnected(client))
+        self.clients.append(client)
+        print("[WebSocket] 浏览器插件已连接")
+
+    def _on_text_received(self, message):
+        try:
+            data = json.loads(message)
+            self.message_received.emit(data)
+            event_bus.publish("bridge:message_received", data)
+        except json.JSONDecodeError:
+            print(f"[WebSocket] 无法解析的非 JSON 消息: {message}")
+
+    def _on_disconnected(self, client):
+        if client in self.clients:
+            self.clients.remove(client)
+            client.deleteLater()
+            print("[WebSocket] 浏览器插件已断开")
+
+    def _on_send_event(self, data: dict):
+        text_msg = data.get("text", "")
+        if text_msg:
+            self.send_to_extension(text_msg)
+
+    @Slot(str)
+    def send_to_extension(self, text_msg):
+        for client in self.clients:
+            client.sendTextMessage(text_msg)
+        print(f"[WebSocket] 已向插件发送文本指令: {text_msg}")
+
+bridge_server = BridgeServer()
+第二步：在 MainWindow 中增加底部状态栏与事件监听
+更新 modules/shell/main_window.py，利用 self.statusBar() 初始化底部状态栏，并订阅 bridge:server_status 事件动态刷新状态显示：
+
+Python
+# modules/shell/main_window.py
+import sys
+from PySide2.QtCore import Qt
+from PySide2.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QTabWidget,
+    QVBoxLayout,
+    QLabel,
+    QPlainTextEdit,
+    QComboBox,
+    QPushButton,
+    QSplitter,
+    QStatusBar
+)
+from shared.infrastructure.event_bus import event_bus
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("BigShrimp - 请求台")
+        self.init_ui()
+        self.center_window()
+        self.bind_events()
+
+    def init_ui(self):
+        # 初始化底部状态栏
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+        self.status_bar.showMessage("本地 9002 服务状态：正在初始化...")
+
+        self.tab_widget = QTabWidget()
+        self.setCentralWidget(self.tab_widget)
+
+        # --- Tab 1: 请求台 ---
+        self.tab_request = QWidget()
+        self.init_request_tab()
+        self.tab_widget.addTab(self.tab_request, "请求台")
+
+        # --- Tab 2: 暂留 ---
+        self.tab_placeholder = QWidget()
+        placeholder_layout = QVBoxLayout(self.tab_placeholder)
+        placeholder_label = QLabel("暂留页面")
+        placeholder_label.setAlignment(Qt.AlignCenter)
+        placeholder_layout.addWidget(placeholder_label)
+        self.tab_widget.addTab(self.tab_placeholder, "暂留")
+
+    def init_request_tab(self):
+        main_splitter = QSplitter(Qt.Horizontal, self.tab_request)
+        
+        # --- 左侧列 ---
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(5, 5, 5, 5)
+
+        left_layout.addWidget(QLabel("原始提示词："))
+        self.input_edit = QPlainTextEdit()
+        left_layout.addWidget(self.input_edit)
+
+        left_layout.addWidget(QLabel("提示词处理框架（下拉选择）："))
+        self.framework_combo = QComboBox()
+        self.framework_combo.addItems(["默认框架", "框架选项A", "框架选项B"])
+        left_layout.addWidget(self.framework_combo)
+
+        left_layout.addWidget(QLabel("框架预览："))
+        self.framework_preview_edit = QPlainTextEdit()
+        left_layout.addWidget(self.framework_preview_edit)
+
+        left_layout.addWidget(QLabel("反馈结果："))
+        self.raw_result_edit = QPlainTextEdit()
+        left_layout.addWidget(self.raw_result_edit)
+
+        # --- 右侧列 ---
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(5, 5, 5, 5)
+
+        right_layout.addWidget(QLabel("最终提示词"))
+        self.final_preview_edit = QPlainTextEdit()
+        right_layout.addWidget(self.final_preview_edit)
+
+        self.send_button = QPushButton("发送请求")
+        right_layout.addWidget(self.send_button)
+
+        right_layout.addWidget(QLabel("结果解析："))
+        self.parsed_result_edit = QPlainTextEdit()
+        right_layout.addWidget(self.parsed_result_edit)
+
+        main_splitter.addWidget(left_widget)
+        main_splitter.addWidget(right_widget)
+        main_splitter.setSizes([600, 600])
+
+        tab_layout = QVBoxLayout(self.tab_request)
+        tab_layout.addWidget(main_splitter)
+
+    def bind_events(self):
+        """绑定控件交互与事件分发"""
+        self.send_button.clicked.connect(self.on_send_clicked)
+        self.framework_combo.currentTextChanged.connect(self.on_framework_changed)
+        
+        # 订阅事件
+        event_bus.subscribe("request:result_ready", self.on_result_ready)
+        event_bus.subscribe("bridge:server_status", self.on_bridge_status_received)
+
+    def on_send_clicked(self):
+        raw_text = self.input_edit.toPlainText()
+        framework = self.framework_combo.currentText()
+        
+        event_bus.publish("request:send_clicked", {
+            "raw_prompt": raw_text,
+            "framework": framework
+        })
+        
+        self.parsed_result_edit.setPlainText("正在发送至 Agent 核心处理...")
+
+    def on_framework_changed(self, framework_name: str):
+        event_bus.publish("framework:changed", {"framework": framework_name})
+        self.framework_preview_edit.setPlainText(f"[{framework_name}] 对应的模板预览加载中...")
+
+    def on_result_ready(self, data: dict):
+        self.final_preview_edit.setPlainText(data.get("final_prompt", ""))
+        self.parsed_result_edit.setPlainText(data.get("parsed_result", ""))
+
+    def on_bridge_status_received(self, data: dict):
+        """接收 WebSocket 服务端状态并更新底部状态栏"""
+        is_running = data.get("is_running", False)
+        port = data.get("port", 9002)
+        if is_running:
+            self.status_bar.showMessage(f"🟢 本地 WebSocket 服务已成功开启 (端口: {port}) - 插件通信就绪")
+        else:
+            error = data.get("error", "未知错误")
+            self.status_bar.showMessage(f"🔴 本地 WebSocket 服务启动失败 (端口: {port}): {error}")
+
+    def center_window(self):
+        screen = QApplication.primaryScreen().availableGeometry()
+        width = int(screen.width() * 0.85)
+        height = int(screen.height() * 0.85)
+        self.resize(width, height)
+        
+        x = screen.x() + (screen.width() - width) // 2
+        y = screen.y() + (screen.height() - height) // 2
+        self.move(x, y)
+服务状态一直显示初始化，
+这是一个典型的时序问题（Race Condition）：
+
+原因分析：
+在之前的代码中，modules/bridge/infrastructure/websocket_server.py 的最底部写了自动实例化语句（bridge_server = BridgeServer()）。当 main.py 导入该模块时，服务器会立即在模块加载阶段创建并发布 bridge:server_status 事件。
+而此时，MainWindow 还没有被实例化，底部的状态栏和事件订阅 (event_bus.subscribe) 尚未完成，导致状态栏错过了这条广播消息，因此一直停留在“正在初始化...”状态。
+
+解决方案：
+取消模块底部的自动实例化，改在 main.py 的主函数中——在 MainWindow 创建并完成事件绑定之后，再显式实例化 BridgeServer。这样就能确保事件发布时，UI 已经准备好接收了。
+
+修改步骤：
+1. 修改 modules/bridge/infrastructure/websocket_server.py
+删掉文件最底部的自动单例实例化代码（即删掉最后的 bridge_server = BridgeServer()）：
+
+Python
+# modules/bridge/infrastructure/websocket_server.py
+import json
+from PySide2.QtCore import QObject, Signal, Slot
+from PySide2.QtWebSockets import QWebSocketServer, QWebSocket
+from PySide2.QtNetwork import QHostAddress
+from shared.infrastructure.event_bus import event_bus
+
+class BridgeServer(QObject):
+    """WebSocket 通信桥梁服务端"""
+
+    message_received = Signal(dict)
+
+    def __init__(self, port=9002, parent=None):
+        super().__init__(parent)
+        self.server = QWebSocketServer(
+            "PySideExtensionBridge", QWebSocketServer.NonSecureMode, self
+        )
+        self.clients = []
+
+        # 尝试监听端口并记录状态
+        self.is_running = self.server.listen(QHostAddress.LocalHost, port)
+        if self.is_running:
+            print(f"[WebSocket] 服务启动成功，监听端口: {port}")
+            self.server.newConnection.connect(self._on_new_connection)
+        else:
+            print(f"[WebSocket] 启动失败: {self.server.errorString()}")
+
+        # 广播服务器状态
+        event_bus.publish("bridge:server_status", {
+            "is_running": self.is_running,
+            "port": port,
+            "error": "" if self.is_running else self.server.errorString()
+        })
+
+        # 订阅下发指令事件
+        event_bus.subscribe("bridge:send_to_extension", self._on_send_event)
+
+    def _on_new_connection(self):
+        client = self.server.nextPendingConnection()
+        client.textMessageReceived.connect(self._on_text_received)
+        client.disconnected.connect(lambda: self._on_disconnected(client))
+        self.clients.append(client)
+        print("[WebSocket] 浏览器插件已连接")
+
+    def _on_text_received(self, message):
+        try:
+            data = json.loads(message)
+            self.message_received.emit(data)
+            event_bus.publish("bridge:message_received", data)
+        except json.JSONDecodeError:
+            print(f"[WebSocket] 无法解析的非 JSON 消息: {message}")
+
+    def _on_disconnected(self, client):
+        if client in self.clients:
+            self.clients.remove(client)
+            client.deleteLater()
+            print("[WebSocket] 浏览器插件已断开")
+
+    def _on_send_event(self, data: dict):
+        text_msg = data.get("text", "")
+        if text_msg:
+            self.send_to_extension(text_msg)
+
+    @Slot(str)
+    def send_to_extension(self, text_msg):
+        for client in self.clients:
+            client.sendTextMessage(text_msg)
+        print(f"[WebSocket] 已向插件发送文本指令: {text_msg}")
+
+# 【注意】此处删除了自动实例化的代码，改由 main.py 统一生命周期管理
+2. 更新 main.py
+在 MainWindow 实例化并显示之后，再显式初始化 BridgeServer：
+
+Python
+# main.py
+import sys
+from PySide2.QtWidgets import QApplication
+from modules.shell.main_window import MainWindow
+import modules.agent.infrastructure.prompt_engine
+from modules.bridge.infrastructure.websocket_server import BridgeServer
+
+def main():
+    app = QApplication(sys.argv)
+    
+    # 1. 先创建主窗口（内部会完成事件监听和状态栏初始化）
+    window = MainWindow()
+    window.show()
+    
+    # 2. 后启动 WebSocket 服务（此时 UI 已就绪，能正确接收并显示状态广播）
+    bridge_server = BridgeServer(port=9002)
+    
+    sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()
+修改完成后重新运行程序，底部状态栏就会立刻正确显示 🟢 本地 WebSocket 服务已成功开启 (端口: 9002) - 插件通信就绪。
+
+状态栏目增加一个链接状态指示，红色的未连接，和绿色的已连接
+为了在底部状态栏直观地显示 Chrome 插件与本地 WebSocket 服务的连接状态（红色未连接、绿色已连接），我们可以让 BridgeServer 在有客户端接入或断开时实时广播连接状态，并在 MainWindow 的状态栏中加入一个持久化的状态指示标签。
+
+以下是具体的修改方案：
+
+第一步：更新 BridgeServer 增加客户端连接状态广播
+在 modules/bridge/infrastructure/websocket_server.py 中，增加一个广播客户端连接数的方法，并在每次有新连接建立或断开时触发：
+
+Python
+# modules/bridge/infrastructure/websocket_server.py
+import json
+from PySide2.QtCore import QObject, Signal, Slot
+from PySide2.QtWebSockets import QWebSocketServer, QWebSocket
+from PySide2.QtNetwork import QHostAddress
+from shared.infrastructure.event_bus import event_bus
+
+class BridgeServer(QObject):
+    """WebSocket 通信桥梁服务端"""
+
+    message_received = Signal(dict)
+
+    def __init__(self, port=9002, parent=None):
+        super().__init__(parent)
+        self.server = QWebSocketServer(
+            "PySideExtensionBridge", QWebSocketServer.NonSecureMode, self
+        )
+        self.clients = []
+
+        # 尝试监听端口并记录状态
+        self.is_running = self.server.listen(QHostAddress.LocalHost, port)
+        if self.is_running:
+            print(f"[WebSocket] 服务启动成功，监听端口: {port}")
+            self.server.newConnection.connect(self._on_new_connection)
+        else:
+            print(f"[WebSocket] 启动失败: {self.server.errorString()}")
+
+        # 广播服务器整体运行状态
+        event_bus.publish("bridge:server_status", {
+            "is_running": self.is_running,
+            "port": port,
+            "error": "" if self.is_running else self.server.errorString()
+        })
+
+        # 初始化时广播一次客户端连接状态（默认 0 个连接）
+        self._broadcast_client_status()
+
+        # 订阅下发指令事件
+        event_bus.subscribe("bridge:send_to_extension", self._on_send_event)
+
+    def _on_new_connection(self):
+        client = self.server.nextPendingConnection()
+        client.textMessageReceived.connect(self._on_text_received)
+        client.disconnected.connect(lambda: self._on_disconnected(client))
+        self.clients.append(client)
+        print("[WebSocket] 浏览器插件已连接")
+        self._broadcast_client_status()
+
+    def _on_disconnected(self, client):
+        if client in self.clients:
+            self.clients.remove(client)
+            client.deleteLater()
+            print("[WebSocket] 浏览器插件已断开")
+            self._broadcast_client_status()
+
+    def _broadcast_client_status(self):
+        """向全局广播当前插件连接状态"""
+        connected = len(self.clients) > 0
+        event_bus.publish("bridge:client_status", {
+            "connected": connected,
+            "count": len(self.clients)
+        })
+
+    def _on_text_received(self, message):
+        try:
+            data = json.loads(message)
+            self.message_received.emit(data)
+            event_bus.publish("bridge:message_received", data)
+        except json.JSONDecodeError:
+            print(f"[WebSocket] 无法解析的非 JSON 消息: {message}")
+
+    def _on_send_event(self, data: dict):
+        text_msg = data.get("text", "")
+        if text_msg:
+            self.send_to_extension(text_msg)
+
+    @Slot(str)
+    def send_to_extension(self, text_msg):
+        for client in self.clients:
+            client.sendTextMessage(text_msg)
+        print(f"[WebSocket] 已向插件发送文本指令: {text_msg}")
+第二步：在 MainWindow 中添加持久化连接状态标签
+更新 modules/shell/main_window.py，在状态栏通过 addPermanentWidget 挂载一个专属的连接状态指示标签，并订阅 bridge:client_status 事件动态切换红/绿指示：
+
+Python
+# modules/shell/main_window.py
+import sys
+from PySide2.QtCore import Qt
+from PySide2.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QTabWidget,
+    QVBoxLayout,
+    QLabel,
+    QPlainTextEdit,
+    QComboBox,
+    QPushButton,
+    QSplitter,
+    QStatusBar
+)
+from shared.infrastructure.event_bus import event_bus
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("BigShrimp - 请求台")
+        self.init_ui()
+        self.center_window()
+        self.bind_events()
+
+    def init_ui(self):
+        # 初始化底部状态栏
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+        self.status_bar.showMessage("本地 9002 服务初始化完成")
+
+        # 创建持久化的连接状态指示标签，放置在状态栏右侧
+        self.connection_label = QLabel("🔴 插件未连接")
+        self.status_bar.addPermanentWidget(self.connection_label)
+
+        self.tab_widget = QTabWidget()
+        self.setCentralWidget(self.tab_widget)
+
+        # --- Tab 1: 请求台 ---
+        self.tab_request = QWidget()
+        self.init_request_tab()
+        self.tab_widget.addTab(self.tab_request, "请求台")
+
+        # --- Tab 2: 暂留 ---
+        self.tab_placeholder = QWidget()
+        placeholder_layout = QVBoxLayout(self.tab_placeholder)
+        placeholder_label = QLabel("暂留页面")
+        placeholder_label.setAlignment(Qt.AlignCenter)
+        placeholder_layout.addWidget(placeholder_label)
+        self.tab_widget.addTab(self.tab_placeholder, "暂留")
+
+    def init_request_tab(self):
+        main_splitter = QSplitter(Qt.Horizontal, self.tab_request)
+        
+        # --- 左侧列 ---
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(5, 5, 5, 5)
+
+        left_layout.addWidget(QLabel("原始提示词："))
+        self.input_edit = QPlainTextEdit()
+        left_layout.addWidget(self.input_edit)
+
+        left_layout.addWidget(QLabel("提示词处理框架（下拉选择）："))
+        self.framework_combo = QComboBox()
+        self.framework_combo.addItems(["默认框架", "框架选项A", "框架选项B"])
+        left_layout.addWidget(self.framework_combo)
+
+        left_layout.addWidget(QLabel("框架预览："))
+        self.framework_preview_edit = QPlainTextEdit()
+        left_layout.addWidget(self.framework_preview_edit)
+
+        left_layout.addWidget(QLabel("反馈结果："))
+        self.raw_result_edit = QPlainTextEdit()
+        left_layout.addWidget(self.raw_result_edit)
+
+        # --- 右侧列 ---
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(5, 5, 5, 5)
+
+        right_layout.addWidget(QLabel("最终提示词"))
+        self.final_preview_edit = QPlainTextEdit()
+        right_layout.addWidget(self.final_preview_edit)
+
+        self.send_button = QPushButton("发送请求")
+        right_layout.addWidget(self.send_button)
+
+        right_layout.addWidget(QLabel("结果解析："))
+        self.parsed_result_edit = QPlainTextEdit()
+        right_layout.addWidget(self.parsed_result_edit)
+
+        main_splitter.addWidget(left_widget)
+        main_splitter.addWidget(right_widget)
+        main_splitter.setSizes([600, 600])
+
+        tab_layout = QVBoxLayout(self.tab_request)
+        tab_layout.addWidget(main_splitter)
+
+    def bind_events(self):
+        """绑定控件交互与事件分发"""
+        self.send_button.clicked.connect(self.on_send_clicked)
+        self.framework_combo.currentTextChanged.connect(self.on_framework_changed)
+        
+        # 订阅事件
+        event_bus.subscribe("request:result_ready", self.on_result_ready)
+        event_bus.subscribe("bridge:server_status", self.on_bridge_status_received)
+        event_bus.subscribe("bridge:client_status", self.on_client_status_received)
+
+    def on_send_clicked(self):
+        raw_text = self.input_edit.toPlainText()
+        framework = self.framework_combo.currentText()
+        
+        event_bus.publish("request:send_clicked", {
+            "raw_prompt": raw_text,
+            "framework": framework
+        })
+        
+        self.parsed_result_edit.setPlainText("正在发送至 Agent 核心处理...")
+
+    def on_framework_changed(self, framework_name: str):
+        event_bus.publish("framework:changed", {"framework": framework_name})
+        self.framework_preview_edit.setPlainText(f"[{framework_name}] 对应的模板预览加载中...")
+
+    def on_result_ready(self, data: dict):
+        self.final_preview_edit.setPlainText(data.get("final_prompt", ""))
+        self.parsed_result_edit.setPlainText(data.get("parsed_result", ""))
+
+    def on_bridge_status_received(self, data: dict):
+        is_running = data.get("is_running", False)
+        port = data.get("port", 9002)
+        if is_running:
+            self.status_bar.showMessage(f"🟢 本地 WebSocket 服务已成功开启 (端口: {port})")
+        else:
+            error = data.get("error", "未知错误")
+            self.status_bar.showMessage(f"🔴 本地 WebSocket 服务启动失败 (端口: {port}): {error}")
+
+    def on_client_status_received(self, data: dict):
+        """接收客户端连接状态并更新右侧指示灯"""
+        connected = data.get("connected", False)
+        if connected:
+            self.connection_label.setText("🟢 插件已连接")
+        else:
+            self.connection_label.setText("🔴 插件未连接")
+
+    def center_window(self):
+        screen = QApplication.primaryScreen().availableGeometry()
+        width = int(screen.width() * 0.85)
+        height = int(screen.height() * 0.85)
+        self.resize(width, height)
+        
+        x = screen.x() + (screen.width() - width) // 2
+        y = screen.y() + (screen.height() - height) // 2
+        self.move(x, y)
+插件未连接 插件已链接 的显示位置，不要底色。不要小图标。未连接显示为红色，已链接显示绿色
+Python
+# modules/shell/main_window.py
+import sys
+from PySide2.QtCore import Qt
+from PySide2.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QTabWidget,
+    QVBoxLayout,
+    QLabel,
+    QPlainTextEdit,
+    QComboBox,
+    QPushButton,
+    QSplitter,
+    QStatusBar
+)
+from shared.infrastructure.event_bus import event_bus
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("BigShrimp - 请求台")
+        self.init_ui()
+        self.center_window()
+        self.bind_events()
+
+    def init_ui(self):
+        # 初始化底部状态栏
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+        self.status_bar.showMessage("本地 9002 服务初始化完成")
+
+        # 创建持久化的连接状态指示标签（无底色、无图标，初始为红色未连接）
+        self.connection_label = QLabel("插件未连接")
+        self.connection_label.setStyleSheet("color: red; background: transparent;")
+        self.status_bar.addPermanentWidget(self.connection_label)
+
+        self.tab_widget = QTabWidget()
+        self.setCentralWidget(self.tab_widget)
+
+        # --- Tab 1: 请求台 ---
+        self.tab_request = QWidget()
+        self.init_request_tab()
+        self.tab_widget.addTab(self.tab_request, "请求台")
+
+        # --- Tab 2: 暂留 ---
+        self.tab_placeholder = QWidget()
+        placeholder_layout = QVBoxLayout(self.tab_placeholder)
+        placeholder_label = QLabel("暂留页面")
+        placeholder_label.setAlignment(Qt.AlignCenter)
+        placeholder_layout.addWidget(placeholder_label)
+        self.tab_widget.addTab(self.tab_placeholder, "暂留")
+
+    def init_request_tab(self):
+        main_splitter = QSplitter(Qt.Horizontal, self.tab_request)
+        
+        # --- 左侧列 ---
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(5, 5, 5, 5)
+
+        left_layout.addWidget(QLabel("原始提示词："))
+        self.input_edit = QPlainTextEdit()
+        left_layout.addWidget(self.input_edit)
+
+        left_layout.addWidget(QLabel("提示词处理框架（下拉选择）："))
+        self.framework_combo = QComboBox()
+        self.framework_combo.addItems(["默认框架", "框架选项A", "框架选项B"])
+        left_layout.addWidget(self.framework_combo)
+
+        left_layout.addWidget(QLabel("框架预览："))
+        self.framework_preview_edit = QPlainTextEdit()
+        left_layout.addWidget(self.framework_preview_edit)
+
+        left_layout.addWidget(QLabel("反馈结果："))
+        self.raw_result_edit = QPlainTextEdit()
+        left_layout.addWidget(self.raw_result_edit)
+
+        # --- 右侧列 ---
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(5, 5, 5, 5)
+
+        right_layout.addWidget(QLabel("最终提示词"))
+        self.final_preview_edit = QPlainTextEdit()
+        right_layout.addWidget(self.final_preview_edit)
+
+        self.send_button = QPushButton("发送请求")
+        right_layout.addWidget(self.send_button)
+
+        right_layout.addWidget(QLabel("结果解析："))
+        self.parsed_result_edit = QPlainTextEdit()
+        right_layout.addWidget(self.parsed_result_edit)
+
+        main_splitter.addWidget(left_widget)
+        main_splitter.addWidget(right_widget)
+        main_splitter.setSizes([600, 600])
+
+        tab_layout = QVBoxLayout(self.tab_request)
+        tab_layout.addWidget(main_splitter)
+
+    def bind_events(self):
+        """绑定控件交互与事件分发"""
+        self.send_button.clicked.connect(self.on_send_clicked)
+        self.framework_combo.currentTextChanged.connect(self.on_framework_changed)
+        
+        # 订阅事件
+        event_bus.subscribe("request:result_ready", self.on_result_ready)
+        event_bus.subscribe("bridge:server_status", self.on_bridge_status_received)
+        event_bus.subscribe("bridge:client_status", self.on_client_status_received)
+
+    def on_send_clicked(self):
+        raw_text = self.input_edit.toPlainText()
+        framework = self.framework_combo.currentText()
+        
+        event_bus.publish("request:send_clicked", {
+            "raw_prompt": raw_text,
+            "framework": framework
+        })
+        
+        self.parsed_result_edit.setPlainText("正在发送至 Agent 核心处理...")
+
+    def on_framework_changed(self, framework_name: str):
+        event_bus.publish("framework:changed", {"framework": framework_name})
+        self.framework_preview_edit.setPlainText(f"[{framework_name}] 对应的模板预览加载中...")
+
+    def on_result_ready(self, data: dict):
+        self.final_preview_edit.setPlainText(data.get("final_prompt", ""))
+        self.parsed_result_edit.setPlainText(data.get("parsed_result", ""))
+
+    def on_bridge_status_received(self, data: dict):
+        is_running = data.get("is_running", False)
+        port = data.get("port", 9002)
+        if is_running:
+            self.status_bar.showMessage(f"本地 WebSocket 服务已成功开启 (端口: {port})")
+        else:
+            error = data.get("error", "未知错误")
+            self.status_bar.showMessage(f"本地 WebSocket 服务启动失败 (端口: {port}): {error}")
+
+    def on_client_status_received(self, data: dict):
+        """接收客户端连接状态并更新右侧文本与文字颜色（无底色、无图标）"""
+        connected = data.get("connected", False)
+        if connected:
+            self.connection_label.setText("插件已链接")
+            self.connection_label.setStyleSheet("color: green; background: transparent;")
+        else:
+            self.connection_label.setText("插件未连接")
+            self.connection_label.setStyleSheet("color: red; background: transparent;")
+
+    def center_window(self):
+        screen = QApplication.primaryScreen().availableGeometry()
+        width = int(screen.width() * 0.85)
+        height = int(screen.height() * 0.85)
+        self.resize(width, height)
+        
+        x = screen.x() + (screen.width() - width) // 2
+        y = screen.y() + (screen.height() - height) // 2
+        self.move(x, y)
+当插件端口断开的时候，主窗体的指示信息要显示断开
+为了精准区分“初始未连接”和“连接后断开”的状态，我们在 BridgeServer 中引入明确的状态标识（init、connected、disconnected），当客户端断开连接时，实时广播断开状态，并在主窗体中显示为红色的“插件断开”。
+
+以下是更新后的代码：
+
+1. 更新 modules/bridge/infrastructure/websocket_server.py
+在连接建立、断开和初始化时，分别广播不同的状态类型：
+
+Python
+# modules/bridge/infrastructure/websocket_server.py
+import json
+from PySide2.QtCore import QObject, Signal, Slot
+from PySide2.QtWebSockets import QWebSocketServer, QWebSocket
+from PySide2.QtNetwork import QHostAddress
+from shared.infrastructure.event_bus import event_bus
+
+class BridgeServer(QObject):
+    """WebSocket 通信桥梁服务端"""
+
+    message_received = Signal(dict)
+
+    def __init__(self, port=9002, parent=None):
+        super().__init__(parent)
+        self.server = QWebSocketServer(
+            "PySideExtensionBridge", QWebSocketServer.NonSecureMode, self
+        )
+        self.clients = []
+
+        # 尝试监听端口并记录状态
+        self.is_running = self.server.listen(QHostAddress.LocalHost, port)
+        if self.is_running:
+            print(f"[WebSocket] 服务启动成功，监听端口: {port}")
+            self.server.newConnection.connect(self._on_new_connection)
+        else:
+            print(f"[WebSocket] 启动失败: {self.server.errorString()}")
+
+        # 广播服务器整体运行状态
+        event_bus.publish("bridge:server_status", {
+            "is_running": self.is_running,
+            "port": port,
+            "error": "" if self.is_running else self.server.errorString()
+        })
+
+        # 初始化时广播初始未连接状态
+        event_bus.publish("bridge:client_status", {"state": "init"})
+
+        # 订阅下发指令事件
+        event_bus.subscribe("bridge:send_to_extension", self._on_send_event)
+
+    def _on_new_connection(self):
+        client = self.server.nextPendingConnection()
+        client.textMessageReceived.connect(self._on_text_received)
+        client.disconnected.connect(lambda: self._on_disconnected(client))
+        self.clients.append(client)
+        print("[WebSocket] 浏览器插件已连接")
+        # 广播已连接状态
+        event_bus.publish("bridge:client_status", {"state": "connected"})
+
+    def _on_disconnected(self, client):
+        if client in self.clients:
+            self.clients.remove(client)
+            client.deleteLater()
+            print("[WebSocket] 浏览器插件已断开")
+            # 广播已断开状态
+            event_bus.publish("bridge:client_status", {"state": "disconnected"})
+
+    def _on_text_received(self, message):
+        try:
+            data = json.loads(message)
+            self.message_received.emit(data)
+            event_bus.publish("bridge:message_received", data)
+        except json.JSONDecodeError:
+            print(f"[WebSocket] 无法解析的非 JSON 消息: {message}")
+
+    def _on_send_event(self, data: dict):
+        text_msg = data.get("text", "")
+        if text_msg:
+            self.send_to_extension(text_msg)
+
+    @Slot(str)
+    def send_to_extension(self, text_msg):
+        for client in self.clients:
+            client.sendTextMessage(text_msg)
+        print(f"[WebSocket] 已向插件发送文本指令: {text_msg}")
+2. 更新 modules/shell/main_window.py
+在 on_client_status_received 槽函数中根据状态分别处理“插件已链接”、“插件断开”以及初始的“插件未连接”：
+
+Python
+# modules/shell/main_window.py
+import sys
+from PySide2.QtCore import Qt
+from PySide2.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QTabWidget,
+    QVBoxLayout,
+    QLabel,
+    QPlainTextEdit,
+    QComboBox,
+    QPushButton,
+    QSplitter,
+    QStatusBar
+)
+from shared.infrastructure.event_bus import event_bus
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("BigShrimp - 请求台")
+        self.init_ui()
+        self.center_window()
+        self.bind_events()
+
+    def init_ui(self):
+        # 初始化底部状态栏
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+        self.status_bar.showMessage("本地 9002 服务初始化完成")
+
+        # 创建持久化的连接状态指示标签（无底色、无图标，初始为红色未连接）
+        self.connection_label = QLabel("插件未连接")
+        self.connection_label.setStyleSheet("color: red; background: transparent;")
+        self.status_bar.addPermanentWidget(self.connection_label)
+
+        self.tab_widget = QTabWidget()
+        self.setCentralWidget(self.tab_widget)
+
+        # --- Tab 1: 请求台 ---
+        self.tab_request = QWidget()
+        self.init_request_tab()
+        self.tab_widget.addTab(self.tab_request, "请求台")
+
+        # --- Tab 2: 暂留 ---
+        self.tab_placeholder = QWidget()
+        placeholder_layout = QVBoxLayout(self.tab_placeholder)
+        placeholder_label = QLabel("暂留页面")
+        placeholder_label.setAlignment(Qt.AlignCenter)
+        placeholder_layout.addWidget(placeholder_label)
+        self.tab_widget.addTab(self.tab_placeholder, "暂留")
+
+    def init_request_tab(self):
+        main_splitter = QSplitter(Qt.Horizontal, self.tab_request)
+        
+        # --- 左侧列 ---
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(5, 5, 5, 5)
+
+        left_layout.addWidget(QLabel("原始提示词："))
+        self.input_edit = QPlainTextEdit()
+        left_layout.addWidget(self.input_edit)
+
+        left_layout.addWidget(QLabel("提示词处理框架（下拉选择）："))
+        self.framework_combo = QComboBox()
+        self.framework_combo.addItems(["默认框架", "框架选项A", "框架选项B"])
+        left_layout.addWidget(self.framework_combo)
+
+        left_layout.addWidget(QLabel("框架预览："))
+        self.framework_preview_edit = QPlainTextEdit()
+        left_layout.addWidget(self.framework_preview_edit)
+
+        left_layout.addWidget(QLabel("反馈结果："))
+        self.raw_result_edit = QPlainTextEdit()
+        left_layout.addWidget(self.raw_result_edit)
+
+        # --- 右侧列 ---
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(5, 5, 5, 5)
+
+        right_layout.addWidget(QLabel("最终提示词"))
+        self.final_preview_edit = QPlainTextEdit()
+        right_layout.addWidget(self.final_preview_edit)
+
+        self.send_button = QPushButton("发送请求")
+        right_layout.addWidget(self.send_button)
+
+        right_layout.addWidget(QLabel("结果解析："))
+        self.parsed_result_edit = QPlainTextEdit()
+        right_layout.addWidget(self.parsed_result_edit)
+
+        main_splitter.addWidget(left_widget)
+        main_splitter.addWidget(right_widget)
+        main_splitter.setSizes([600, 600])
+
+        tab_layout = QVBoxLayout(self.tab_request)
+        tab_layout.addWidget(main_splitter)
+
+    def bind_events(self):
+        """绑定控件交互与事件分发"""
+        self.send_button.clicked.connect(self.on_send_clicked)
+        self.framework_combo.currentTextChanged.connect(self.on_framework_changed)
+        
+        # 订阅事件
+        event_bus.subscribe("request:result_ready", self.on_result_ready)
+        event_bus.subscribe("bridge:server_status", self.on_bridge_status_received)
+        event_bus.subscribe("bridge:client_status", self.on_client_status_received)
+
+    def on_send_clicked(self):
+        raw_text = self.input_edit.toPlainText()
+        framework = self.framework_combo.currentText()
+        
+        event_bus.publish("request:send_clicked", {
+            "raw_prompt": raw_text,
+            "framework": framework
+        })
+        
+        self.parsed_result_edit.setPlainText("正在发送至 Agent 核心处理...")
+
+    def on_framework_changed(self, framework_name: str):
+        event_bus.publish("framework:changed", {"framework": framework_name})
+        self.framework_preview_edit.setPlainText(f"[{framework_name}] 对应的模板预览加载中...")
+
+    def on_result_ready(self, data: dict):
+        self.final_preview_edit.setPlainText(data.get("final_prompt", ""))
+        self.parsed_result_edit.setPlainText(data.get("parsed_result", ""))
+
+    def on_bridge_status_received(self, data: dict):
+        is_running = data.get("is_running", False)
+        port = data.get("port", 9002)
+        if is_running:
+            self.status_bar.showMessage(f"本地 WebSocket 服务已成功开启 (端口: {port})")
+        else:
+            error = data.get("error", "未知错误")
+            self.status_bar.showMessage(f"本地 WebSocket 服务启动失败 (端口: {port}): {error}")
+
+    def on_client_status_received(self, data: dict):
+        """根据后端广播的连接状态更新指示标签"""
+        state = data.get("state", "init")
+        if state == "connected":
+            self.connection_label.setText("插件已链接")
+            self.connection_label.setStyleSheet("color: green; background: transparent;")
+        elif state == "disconnected":
+            self.connection_label.setText("插件断开")
+            self.connection_label.setStyleSheet("color: red; background: transparent;")
+        else:
+            self.connection_label.setText("插件未连接")
+            self.connection_label.setStyleSheet("color: red; background: transparent;")
+
+    def center_window(self):
+        screen = QApplication.primaryScreen().availableGeometry()
+        width = int(screen.width() * 0.85)
+        height = int(screen.height() * 0.85)
+        self.resize(width, height)
+        
+        x = screen.x() + (screen.width() - width) // 2
+        y = screen.y() + (screen.height() - height) // 2
+        self.move(x, y)
+我插件断开了还是没有更新，是不是本地程序没有轮询连接状态
+你的直觉非常敏锐！这里确实存在两个导致“断开状态不更新”的核心问题，你的猜测（需要轮询/心跳）恰好切中了 WebSockets 与浏览器插件通信的痛点。
+
+原因分析：
+
+“假死”连接（TCP 挥手丢失）： 尤其是 Chrome 插件（特别是 Manifest V3 的 Service Worker），当它被浏览器挂起、或者你直接刷新/重载插件时，它可能来不及向本地发送标准的 WebSocket Close 帧。此时本地 Qt 服务端会认为连接还在，disconnected 信号根本不会触发。这就需要你说的“轮询”或“心跳机制（Heartbeat）”来主动探测。
+
+信号绑定的 Lambda 闭包问题： 在 PySide2 中，使用 client.disconnected.connect(lambda: self._on_disconnected(client)) 时，如果 client 对象没有被持续强引用，或者随着事件循环的作用域变化，这种写法有时会导致信号丢失。更稳妥的做法是使用 Qt 的 self.sender() 来获取发送信号的对象。
+
+为了彻底解决这个问题，我们要在 BridgeServer 中引入 QTimer 心跳检测，并优化信号槽的绑定方式。
+
+终极修复方案
+更新 modules/bridge/infrastructure/websocket_server.py 代码。我们加入一个定时器，每 3 秒主动检查一次连接状态，同时向插件发送 Ping 帧（这也能防止 Chrome Manifest V3 插件因为不活跃而休眠）。
+
+Python
+# modules/bridge/infrastructure/websocket_server.py
+import json
+from PySide2.QtCore import QObject, Signal, Slot, QTimer
+from PySide2.QtWebSockets import QWebSocketServer, QWebSocket
+from PySide2.QtNetwork import QHostAddress
+from shared.infrastructure.event_bus import event_bus
+
+class BridgeServer(QObject):
+    """WebSocket 通信桥梁服务端（带心跳保活与状态轮询）"""
+
+    message_received = Signal(dict)
+
+    def __init__(self, port=9002, parent=None):
+        super().__init__(parent)
+        self.server = QWebSocketServer(
+            "PySideExtensionBridge", QWebSocketServer.NonSecureMode, self
+        )
+        self.clients = []
+
+        # 尝试监听端口并记录状态
+        self.is_running = self.server.listen(QHostAddress.LocalHost, port)
+        if self.is_running:
+            print(f"[WebSocket] 服务启动成功，监听端口: {port}")
+            self.server.newConnection.connect(self._on_new_connection)
+            
+            # --- 新增：启动心跳与状态轮询定时器 ---
+            self.heartbeat_timer = QTimer(self)
+            self.heartbeat_timer.timeout.connect(self._check_connections)
+            self.heartbeat_timer.start(3000)  # 每 3 秒轮询一次
+        else:
+            print(f"[WebSocket] 启动失败: {self.server.errorString()}")
+
+        # 广播服务器整体运行状态
+        event_bus.publish("bridge:server_status", {
+            "is_running": self.is_running,
+            "port": port,
+            "error": "" if self.is_running else self.server.errorString()
+        })
+
+        # 初始化时广播初始未连接状态
+        event_bus.publish("bridge:client_status", {"state": "init"})
+
+        # 订阅下发指令事件
+        event_bus.subscribe("bridge:send_to_extension", self._on_send_event)
+
+    def _on_new_connection(self):
+        client = self.server.nextPendingConnection()
+        client.textMessageReceived.connect(self._on_text_received)
+        
+        # 修复：放弃 lambda，直接绑定槽函数，在槽函数内使用 self.sender() 获取对象
+        client.disconnected.connect(self._on_disconnected)
+        
+        self.clients.append(client)
+        print("[WebSocket] 浏览器插件已连接")
+        event_bus.publish("bridge:client_status", {"state": "connected"})
+
+    def _on_disconnected(self):
+        """处理正常的断开事件"""
+        client = self.sender()
+        self._remove_client(client)
+
+    def _check_connections(self):
+        """主动轮询检查连接状态（心跳机制）"""
+        for client in list(self.clients):
+            # 1. 检查底层 socket 状态是否已经不在连接中
+            if client.state() != QWebSocket.ConnectedState:
+                print("[WebSocket] 轮询检测到僵尸连接，执行清理")
+                self._remove_client(client)
+            else:
+                # 2. 发送 ping 帧。一方面检测连通性，另一方面防止 Chrome 插件 Service Worker 休眠
+                client.ping()
+
+    def _remove_client(self, client):
+        """统一清理失效客户端，并触发 UI 更新"""
+        if client in self.clients:
+            self.clients.remove(client)
+            client.deleteLater()
+            print(f"[WebSocket] 客户端已移除，当前剩余连接数: {len(self.clients)}")
+            
+        # 只有当所有客户端都断开时，才向 UI 广播“断开”状态
+        if len(self.clients) == 0:
+            event_bus.publish("bridge:client_status", {"state": "disconnected"})
+
+    def _on_text_received(self, message):
+        try:
+            data = json.loads(message)
+            self.message_received.emit(data)
+            event_bus.publish("bridge:message_received", data)
+        except json.JSONDecodeError:
+            print(f"[WebSocket] 无法解析的非 JSON 消息: {message}")
+
+    def _on_send_event(self, data: dict):
+        text_msg = data.get("text", "")
+        if text_msg:
+            self.send_to_extension(text_msg)
+
+    @Slot(str)
+    def send_to_extension(self, text_msg):
+        for client in self.clients:
+            client.sendTextMessage(text_msg)
+        print(f"[WebSocket] 已向插件发送文本指令: {text_msg}")
+这个修复做了什么？
+_check_connections 主动轮询：每隔 3 秒，程序会主动遍历所有 clients。如果发现某个客户端底层的 Socket 状态不再是 ConnectedState，就会立刻将其剔除并更新 UI。
+
+Ping/Pong 心跳保活：通过 client.ping()，服务端会主动向 Chrome 插件发送轻量级的数据包。这对于 Chrome 插件极其重要，能强制延长浏览器插件后台的存活周期，避免它无故断开。
+
+self.sender() 替换 Lambda：避免了 Python 垃圾回收或闭包作用域导致的信号丢失问题，确保插件只要正常触发断开，服务端必定能捕获。
+
+多连接兼容：改为 if len(self.clients) == 0: 判断。如果你不小心在浏览器里打开了两个插件页面（产生两个连接），关掉其中一个时，只要另一个还连着，UI 依然会保持绿色的“已连接”。全部关掉才会变红。
+
+开始实现向插件端口发送消息，发送最终提示词。如果最终提示词为空则不发送
+Python
+# modules/shell/main_window.py
+import sys
+from PySide2.QtCore import Qt
+from PySide2.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QTabWidget,
+    QVBoxLayout,
+    QLabel,
+    QPlainTextEdit,
+    QComboBox,
+    QPushButton,
+    QSplitter,
+    QStatusBar
+)
+from shared.infrastructure.event_bus import event_bus
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("BigShrimp - 请求台")
+        self.init_ui()
+        self.center_window()
+        self.bind_events()
+
+    def init_ui(self):
+        # 初始化底部状态栏
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+        self.status_bar.showMessage("本地 9002 服务初始化完成")
+
+        # 创建持久化的连接状态指示标签（无底色、无图标，初始为红色未连接）
+        self.connection_label = QLabel("插件未连接")
+        self.connection_label.setStyleSheet("color: red; background: transparent;")
+        self.status_bar.addPermanentWidget(self.connection_label)
+
+        self.tab_widget = QTabWidget()
+        self.setCentralWidget(self.tab_widget)
+
+        # --- Tab 1: 请求台 ---
+        self.tab_request = QWidget()
+        self.init_request_tab()
+        self.tab_widget.addTab(self.tab_request, "请求台")
+
+        # --- Tab 2: 暂留 ---
+        self.tab_placeholder = QWidget()
+        placeholder_layout = QVBoxLayout(self.tab_placeholder)
+        placeholder_label = QLabel("暂留页面")
+        placeholder_label.setAlignment(Qt.AlignCenter)
+        placeholder_layout.addWidget(placeholder_label)
+        self.tab_widget.addTab(self.tab_placeholder, "暂留")
+
+    def init_request_tab(self):
+        main_splitter = QSplitter(Qt.Horizontal, self.tab_request)
+        
+        # --- 左侧列 ---
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(5, 5, 5, 5)
+
+        left_layout.addWidget(QLabel("原始提示词："))
+        self.input_edit = QPlainTextEdit()
+        left_layout.addWidget(self.input_edit)
+
+        left_layout.addWidget(QLabel("提示词处理框架（下拉选择）："))
+        self.framework_combo = QComboBox()
+        self.framework_combo.addItems(["默认框架", "框架选项A", "框架选项B"])
+        left_layout.addWidget(self.framework_combo)
+
+        left_layout.addWidget(QLabel("框架预览："))
+        self.framework_preview_edit = QPlainTextEdit()
+        left_layout.addWidget(self.framework_preview_edit)
+
+        left_layout.addWidget(QLabel("反馈结果："))
+        self.raw_result_edit = QPlainTextEdit()
+        left_layout.addWidget(self.raw_result_edit)
+
+        # --- 右侧列 ---
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(5, 5, 5, 5)
+
+        right_layout.addWidget(QLabel("最终提示词"))
+        self.final_preview_edit = QPlainTextEdit()
+        right_layout.addWidget(self.final_preview_edit)
+
+        self.send_button = QPushButton("发送请求")
+        right_layout.addWidget(self.send_button)
+
+        right_layout.addWidget(QLabel("结果解析："))
+        self.parsed_result_edit = QPlainTextEdit()
+        right_layout.addWidget(self.parsed_result_edit)
+
+        main_splitter.addWidget(left_widget)
+        main_splitter.addWidget(right_widget)
+        main_splitter.setSizes([600, 600])
+
+        tab_layout = QVBoxLayout(self.tab_request)
+        tab_layout.addWidget(main_splitter)
+
+    def bind_events(self):
+        """绑定控件交互与事件分发"""
+        self.send_button.clicked.connect(self.on_send_clicked)
+        self.framework_combo.currentTextChanged.connect(self.on_framework_changed)
+        
+        # 订阅事件
+        event_bus.subscribe("request:result_ready", self.on_result_ready)
+        event_bus.subscribe("bridge:server_status", self.on_bridge_status_received)
+        event_bus.subscribe("bridge:client_status", self.on_client_status_received)
+
+    def on_send_clicked(self):
+        raw_text = self.input_edit.toPlainText()
+        framework = self.framework_combo.currentText()
+        
+        event_bus.publish("request:send_clicked", {
+            "raw_prompt": raw_text,
+            "framework": framework
+        })
+        
+        self.parsed_result_edit.setPlainText("正在发送至 Agent 核心处理...")
+
+    def on_framework_changed(self, framework_name: str):
+        event_bus.publish("framework:changed", {"framework": framework_name})
+        self.framework_preview_edit.setPlainText(f"[{framework_name}] 对应的模板预览加载中...")
+
+    def on_result_ready(self, data: dict):
+        """接收 Agent 处理完成的数据并更新 UI，同时校验并向插件端口发送最终提示词"""
+        final_prompt = data.get("final_prompt", "")
+        parsed_result = data.get("parsed_result", "")
+        
+        self.final_preview_edit.setPlainText(final_prompt)
+        self.parsed_result_edit.setPlainText(parsed_result)
+        
+        # 校验最终提示词是否为空，若为空则不发送，不为空则通过事件总线推送给插件端
+        if final_prompt and final_prompt.strip():
+            event_bus.publish("bridge:send_to_extension", {"text": final_prompt})
+        else:
+            print("[MainWindow] 最终提示词为空，已跳过向插件发送")
+
+    def on_bridge_status_received(self, data: dict):
+        is_running = data.get("is_running", False)
+        port = data.get("port", 9002)
+        if is_running:
+            self.status_bar.showMessage(f"本地 WebSocket 服务已成功开启 (端口: {port})")
+        else:
+            error = data.get("error", "未知错误")
+            self.status_bar.showMessage(f"本地 WebSocket 服务启动失败 (端口: {port}): {error}")
+
+    def on_client_status_received(self, data: dict):
+        state = data.get("state", "init")
+        if state == "connected":
+            self.connection_label.setText("插件已链接")
+            self.connection_label.setStyleSheet("color: green; background: transparent;")
+        elif state == "disconnected":
+            self.connection_label.setText("插件断开")
+            self.connection_label.setStyleSheet("color: red; background: transparent;")
+        else:
+            self.connection_label.setText("插件未连接")
+            self.connection_label.setStyleSheet("color: red; background: transparent;")
+
+    def center_window(self):
+        screen = QApplication.primaryScreen().availableGeometry()
+        width = int(screen.width() * 0.85)
+        height = int(screen.height() * 0.85)
+        self.resize(width, height)
+        
+        x = screen.x() + (screen.width() - width) // 2
+        y = screen.y() + (screen.height() - height) // 2
+        self.move(x, y)
+mainwinows中的具体业务逻辑剥离出来
+按照 Modular Monolith（模块化单体） 与 Clean Architecture（整洁架构） 的设计原则，UI 层（shell）应当保持“瘦身（Thin UI）”，只负责组件布局、样式呈现以及视图刷新，而将所有的业务逻辑、流程编排与事件决策剥离到应用层控制器（Application Controller）中。
+
+下面我们将 MainWindow 中的业务逻辑（如校验提示词、状态判定、桥接消息分发控制等）剥离出来，引入 ShellController。
+
+第一步：实现 Shell 模块的应用层控制器 (modules/shell/application/shell_controller.py)
+该控制器专门负责接收 UI 的行为触发，执行业务校验与事件编排，与全局的 event_bus 交互：
+
+Python
+# modules/shell/application/shell_controller.py
+from shared.infrastructure.event_bus import event_bus
+
+class ShellController:
+    """Shell 模块的应用层控制器，负责剥离 MainWindow 中的业务逻辑与事件编排"""
+
+    def __init__(self):
+        # 订阅全局返回结果，用于在控制器内部进行业务校验（如判空）
+        event_bus.subscribe("request:result_ready", self.handle_result_validation)
+
+    def handle_send_request(self, raw_text: str, framework: str):
+        """处理用户点击发送请求的业务逻辑"""
+        # 可以在此扩展更多前置业务校验（如校验 raw_text 长度、敏感词等）
+        print(f"[ShellController] 触发请求发送，当前框架: {framework}")
+        
+        # 通过事件总线广播请求意图
+        event_bus.publish("request:send_clicked", {
+            "raw_prompt": raw_text,
+            "framework": framework
+        })
+
+    def handle_framework_change(self, framework_name: str):
+        """处理框架切换的业务逻辑"""
+        event_bus.publish("framework:changed", {"framework": framework_name})
+
+    def handle_result_validation(self, data: dict):
+        """处理 Agent 返回结果的业务规则：校验最终提示词是否为空，决定是否推送给插件端"""
+        final_prompt = data.get("final_prompt", "")
+        
+        if final_prompt and final_prompt.strip():
+            # 业务规则满足：通过桥接通道向插件端口发送最终提示词
+            event_bus.publish("bridge:send_to_extension", {"text": final_prompt})
+            print("[ShellController] 最终提示词校验通过，已向插件端口发送")
+        else:
+            print("[ShellController] 最终提示词为空，已拦截，不向插件发送")
+第二步：重构 MainWindow（使其回归纯净的 View 层）
+更新 modules/shell/main_window.py。现在的 MainWindow 不再直接包含业务判断逻辑，而是完全委派给 ShellController：
+
+Python
+# modules/shell/main_window.py
+import sys
+from PySide2.QtCore import Qt
+from PySide2.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QTabWidget,
+    QVBoxLayout,
+    QLabel,
+    QPlainTextEdit,
+    QComboBox,
+    QPushButton,
+    QSplitter,
+    QStatusBar
+)
+from shared.infrastructure.event_bus import event_bus
+from modules.shell.application.shell_controller import ShellController
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("BigShrimp - 请求台")
+        
+        # 实例化应用层控制器，集中管理业务逻辑
+        self.controller = ShellController()
+        
+        self.init_ui()
+        self.center_window()
+        self.bind_events()
+
+    def init_ui(self):
+        # 初始化底部状态栏
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+        self.status_bar.showMessage("本地 9002 服务初始化完成")
+
+        # 创建持久化的连接状态指示标签（无底色、无图标，初始为红色未连接）
+        self.connection_label = QLabel("插件未连接")
+        self.connection_label.setStyleSheet("color: red; background: transparent;")
+        self.status_bar.addPermanentWidget(self.connection_label)
+
+        self.tab_widget = QTabWidget()
+        self.setCentralWidget(self.tab_widget)
+
+        # --- Tab 1: 请求台 ---
+        self.tab_request = QWidget()
+        self.init_request_tab()
+        self.tab_widget.addTab(self.tab_request, "请求台")
+
+        # --- Tab 2: 暂留 ---
+        self.tab_placeholder = QWidget()
+        placeholder_layout = QVBoxLayout(self.tab_placeholder)
+        placeholder_label = QLabel("暂留页面")
+        placeholder_label.setAlignment(Qt.AlignCenter)
+        placeholder_layout.addWidget(placeholder_label)
+        self.tab_widget.addTab(self.tab_placeholder, "暂留")
+
+    def init_request_tab(self):
+        main_splitter = QSplitter(Qt.Horizontal, self.tab_request)
+        
+        # --- 左侧列 ---
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(5, 5, 5, 5)
+
+        left_layout.addWidget(QLabel("原始提示词："))
+        self.input_edit = QPlainTextEdit()
+        left_layout.addWidget(self.input_edit)
+
+        left_layout.addWidget(QLabel("提示词处理框架（下拉选择）："))
+        self.framework_combo = QComboBox()
+        self.framework_combo.addItems(["默认框架", "框架选项A", "框架选项B"])
+        left_layout.addWidget(self.framework_combo)
+
+        left_layout.addWidget(QLabel("框架预览："))
+        self.framework_preview_edit = QPlainTextEdit()
+        left_layout.addWidget(self.framework_preview_edit)
+
+        left_layout.addWidget(QLabel("反馈结果："))
+        self.raw_result_edit = QPlainTextEdit()
+        left_layout.addWidget(self.raw_result_edit)
+
+        # --- 右侧列 ---
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(5, 5, 5, 5)
+
+        right_layout.addWidget(QLabel("最终提示词"))
+        self.final_preview_edit = QPlainTextEdit()
+        right_layout.addWidget(self.final_preview_edit)
+
+        self.send_button = QPushButton("发送请求")
+        right_layout.addWidget(self.send_button)
+
+        right_layout.addWidget(QLabel("结果解析："))
+        self.parsed_result_edit = QPlainTextEdit()
+        right_layout.addWidget(self.parsed_result_edit)
+
+        main_splitter.addWidget(left_widget)
+        main_splitter.addWidget(right_widget)
+        main_splitter.setSizes([600, 600])
+
+        tab_layout = QVBoxLayout(self.tab_request)
+        tab_layout.addWidget(main_splitter)
+
+    def bind_events(self):
+        """绑定 UI 控件交互，将动作交由控制器处理"""
+        self.send_button.clicked.connect(self.on_send_clicked)
+        self.framework_combo.currentTextChanged.connect(self.on_framework_changed)
+        
+        # 订阅系统状态与返回结果事件，用于纯 UI 视图刷新
+        event_bus.subscribe("request:result_ready", self.on_result_ready)
+        event_bus.subscribe("bridge:server_status", self.on_bridge_status_received)
+        event_bus.subscribe("bridge:client_status", self.on_client_status_received)
+
+    def on_send_clicked(self):
+        raw_text = self.input_edit.toPlainText()
+        framework = self.framework_combo.currentText()
+        
+        # 将业务交由控制层处理
+        self.controller.handle_send_request(raw_text, framework)
+        self.parsed_result_edit.setPlainText("正在发送至 Agent 核心处理...")
+
+    def on_framework_changed(self, framework_name: str):
+        self.controller.handle_framework_change(framework_name)
+        self.framework_preview_edit.setPlainText(f"[{framework_name}] 对应的模板预览加载中...")
+
+    def on_result_ready(self, data: dict):
+        """纯视图刷新逻辑：仅负责将数据渲染到 UI 控件上"""
+        self.final_preview_edit.setPlainText(data.get("final_prompt", ""))
+        self.parsed_result_edit.setPlainText(data.get("parsed_result", ""))
+
+    def on_bridge_status_received(self, data: dict):
+        is_running = data.get("is_running", False)
+        port = data.get("port", 9002)
+        if is_running:
+            self.status_bar.showMessage(f"本地 WebSocket 服务已成功开启 (端口: {port})")
+        else:
+            error = data.get("error", "未知错误")
+            self.status_bar.showMessage(f"本地 WebSocket 服务启动失败 (端口: {port}): {error}")
+
+    def on_client_status_received(self, data: dict):
+        state = data.get("state", "init")
+        if state == "connected":
+            self.connection_label.setText("插件已链接")
+            self.connection_label.setStyleSheet("color: green; background: transparent;")
+        elif state == "disconnected":
+            self.connection_label.setText("插件断开")
+            self.connection_label.setStyleSheet("color: red; background: transparent;")
+        else:
+            self.connection_label.setText("插件未连接")
+            self.connection_label.setStyleSheet("color: red; background: transparent;")
+
+    def center_window(self):
+        screen = QApplication.primaryScreen().availableGeometry()
+        width = int(screen.width() * 0.85)
+        height = int(screen.height() * 0.85)
+        self.resize(width, height)
+        
+        x = screen.x() + (screen.width() - width) // 2
+        y = screen.y() + (screen.height() - height) // 2
+        self.move(x, y)
+│ ├── shell
+│ │ ├── __pycache__
+│ │ │ └── main_window.cpython-38.pyc
+│ │ ├── api.py
+│ │ ├── components
+│ │ │ ├── code_editor
+│ │ │ │ ├── __pycache__
+│ │ │ │ │ └── python_highlighter.cpython-38.pyc
+│ │ │ │ └── python_highlighter.py
+│ │ │ ├── diff_viewer
+│ │ │ └── terminal
+│ │ ├── dialogs
+│ │ │ ├── approval_dialog.py
+│ │ │ └── settings_dialog.py
+│ │ ├── main_window.py
+│ │ ├── panels
+│ │ │ ├── agent_chat_panel.py
+│ │ │ ├── project_tree_panel.py
+│ │ │ └── runner_panel.py
+│ │ └── presenters
+│ │ ├── agent_presenter.py
+│ │ ├── editor_presenter.py
+│ │ ├── project_presenter.py
+│ │ └── runner_presenter.py shell的架构是这个
+收到。根据你提供的 shell 真实目录结构（采用标准的 MVP (Model-View-Presenter) 架构，拥有 panels、components、dialogs 和 presenters），我们需要将业务逻辑剥离并放入对应的 Presenter 层中，而不是使用通用的控制器。
+
+这样可以让 MainWindow 和各个 Panel 完全回归纯粹的 View 职责，只负责 UI 渲染和事件转发。
+
+一、 创建或重构 Shell 层的 Presenter (modules/shell/presenters/agent_presenter.py 或主 Presenter)
+按照你的目录结构，我们将请求台、最终提示词校验及 WebSocket 插件通信的业务逻辑归入 Presenter 中：
+
+Python
+# modules/shell/presenters/agent_presenter.py
+from shared.infrastructure.event_bus import event_bus
+
+class AgentPresenter:
+    """负责处理请求台与插件桥接的业务逻辑（MVP 中的 Presenter 层）"""
+
+    def __init__(self, view):
+        self.view = view
+        # 订阅系统事件
+        event_bus.subscribe("request:result_ready", self.handle_result_ready)
+        event_bus.subscribe("bridge:server_status", self.handle_server_status)
+        event_bus.subscribe("bridge:client_status", self.handle_client_status)
+
+    def send_request(self, raw_text: str, framework: str):
+        """处理用户点击发送的业务逻辑"""
+        print(f"[AgentPresenter] 触发请求发送，当前框架: {framework}")
+        event_bus.publish("request:send_clicked", {
+            "raw_prompt": raw_text,
+            "framework": framework
+        })
+
+    def change_framework(self, framework_name: str):
+        """处理框架切换业务"""
+        event_bus.publish("framework:changed", {"framework": framework_name})
+
+    def handle_result_ready(self, data: dict):
+        """处理 Agent 返回结果：校验最终提示词并决定是否推送给插件端"""
+        final_prompt = data.get("final_prompt", "")
+        parsed_result = data.get("parsed_result", "")
+
+        # 通知 View 刷新界面
+        self.view.update_results(final_prompt, parsed_result)
+
+        # 业务规则校验：最终提示词不为空时才通过网关发送给插件
+        if final_prompt and final_prompt.strip():
+            event_bus.publish("bridge:send_to_extension", {"text": final_prompt})
+            print("[AgentPresenter] 最终提示词校验通过，已向插件端口发送")
+        else:
+            print("[AgentPresenter] 最终提示词为空，已拦截，不向插件发送")
+
+    def handle_server_status(self, data: dict):
+        is_running = data.get("is_running", False)
+        port = data.get("port", 9002)
+        self.view.update_server_status(is_running, port, data.get("error", ""))
+
+    def handle_client_status(self, data: dict):
+        state = data.get("state", "init")
+        self.view.update_client_status(state)
+二、 瘦身后的 MainWindow (modules/shell/main_window.py)
+配合你的目录结构，MainWindow 现在只保留 UI 布局初始化以及将用户操作委托给 AgentPresenter 的代码：
+
+Python
+# modules/shell/main_window.py
+import sys
+from PySide2.QtCore import Qt
+from PySide2.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QTabWidget,
+    QVBoxLayout,
+    QLabel,
+    QPlainTextEdit,
+    QComboBox,
+    QPushButton,
+    QSplitter,
+    QStatusBar
+)
+from modules.shell.presenters.agent_presenter import AgentPresenter
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("BigShrimp - 请求台")
+        
+        # 绑定 MVP 的 Presenter 层，剥离业务逻辑
+        self.presenter = AgentPresenter(self)
+        
+        self.init_ui()
+        self.center_window()
+        self.bind_signals()
+
+    def init_ui(self):
+        # 初始化底部状态栏
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+        self.status_bar.showMessage("本地 9002 服务初始化完成")
+
+        # 创建持久化的连接状态指示标签（无底色、无图标，初始为红色未连接）
+        self.connection_label = QLabel("插件未连接")
+        self.connection_label.setStyleSheet("color: red; background: transparent;")
+        self.status_bar.addPermanentWidget(self.connection_label)
+
+        self.tab_widget = QTabWidget()
+        self.setCentralWidget(self.tab_widget)
+
+        # --- Tab 1: 请求台 ---
+        self.tab_request = QWidget()
+        self.init_request_tab()
+        self.tab_widget.addTab(self.tab_request, "请求台")
+
+        # --- Tab 2: 暂留 ---
+        self.tab_placeholder = QWidget()
+        placeholder_layout = QVBoxLayout(self.tab_placeholder)
+        placeholder_label = QLabel("暂留页面")
+        placeholder_label.setAlignment(Qt.AlignCenter)
+        placeholder_layout.addWidget(placeholder_label)
+        self.tab_widget.addTab(self.tab_placeholder, "暂留")
+
+    def init_request_tab(self):
+        main_splitter = QSplitter(Qt.Horizontal, self.tab_request)
+        
+        # --- 左侧列 ---
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(5, 5, 5, 5)
+
+        left_layout.addWidget(QLabel("原始提示词："))
+        self.input_edit = QPlainTextEdit()
+        left_layout.addWidget(self.input_edit)
+
+        left_layout.addWidget(QLabel("提示词处理框架（下拉选择）："))
+        self.framework_combo = QComboBox()
+        self.framework_combo.addItems(["默认框架", "框架选项A", "框架选项B"])
+        left_layout.addWidget(self.framework_combo)
+
+        left_layout.addWidget(QLabel("框架预览："))
+        self.framework_preview_edit = QPlainTextEdit()
+        left_layout.addWidget(self.framework_preview_edit)
+
+        left_layout.addWidget(QLabel("反馈结果："))
+        self.raw_result_edit = QPlainTextEdit()
+        left_layout.addWidget(self.raw_result_edit)
+
+        # --- 右侧列 ---
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(5, 5, 5, 5)
+
+        right_layout.addWidget(QLabel("最终提示词"))
+        self.final_preview_edit = QPlainTextEdit()
+        right_layout.addWidget(self.final_preview_edit)
+
+        self.send_button = QPushButton("发送请求")
+        right_layout.addWidget(self.send_button)
+
+        right_layout.addWidget(QLabel("结果解析："))
+        self.parsed_result_edit = QPlainTextEdit()
+        right_layout.addWidget(self.parsed_result_edit)
+
+        main_splitter.addWidget(left_widget)
+        main_splitter.addWidget(right_widget)
+        main_splitter.setSizes([600, 600])
+
+        tab_layout = QVBoxLayout(self.tab_request)
+        tab_layout.addWidget(main_splitter)
+
+    def bind_signals(self):
+        """绑定 UI 控件信号到槽函数"""
+        self.send_button.clicked.connect(self.on_send_clicked)
+        self.framework_combo.currentTextChanged.connect(self.on_framework_changed)
+
+    def on_send_clicked(self):
+        raw_text = self.input_edit.toPlainText()
+        framework = self.framework_combo.currentText()
+        self.parsed_result_edit.setPlainText("正在发送至 Agent 核心处理...")
+        self.presenter.send_request(raw_text, framework)
+
+    def on_framework_changed(self, framework_name: str):
+        self.presenter.change_framework(framework_name)
+        self.framework_preview_edit.setPlainText(f"[{framework_name}] 对应的模板预览加载中...")
+
+    # --- 以下为 View 层的纯渲染接口，供 Presenter 调用 ---
+
+    def update_results(self, final_prompt: str, parsed_result: str):
+        self.final_preview_edit.setPlainText(final_prompt)
+        self.parsed_result_edit.setPlainText(parsed_result)
+
+    def update_server_status(self, is_running: bool, port: int, error: str):
+        if is_running:
+            self.status_bar.showMessage(f"本地 WebSocket 服务已成功开启 (端口: {port})")
+        else:
+            self.status_bar.showMessage(f"本地 WebSocket 服务启动失败 (端口: {port}): {error}")
+
+    def update_client_status(self, state: str):
+        if state == "connected":
+            self.connection_label.setText("插件已链接")
+            self.connection_label.setStyleSheet("color: green; background: transparent;")
+        elif state == "disconnected":
+            self.connection_label.setText("插件断开")
+            self.connection_label.setStyleSheet("color: red; background: transparent;")
+        else:
+            self.connection_label.setText("插件未连接")
+            self.connection_label.setStyleSheet("color: red; background: transparent;")
+
+    def center_window(self):
+        screen = QApplication.primaryScreen().availableGeometry()
+        width = int(screen.width() * 0.85)
+        height = int(screen.height() * 0.85)
+        self.resize(width, height)
+        
+        x = screen.x() + (screen.width() - width) // 2
+        y = screen.y() + (screen.height() - height) // 2
+        self.move(x, y)
+回到你的modules/shell/application/shell_controller.py
+好的，我们切回 modules/shell/application/shell_controller.py 的架构模式。
+
+将业务逻辑归集到 ShellController 中，可以让 MainWindow 保持极致的清爽，仅负责 UI 组件布局和视图渲染。
+
+第一步：实现 modules/shell/application/shell_controller.py
+Python
+# modules/shell/application/shell_controller.py
+from shared.infrastructure.event_bus import event_bus
+
+class ShellController:
+    """Shell 模块的应用层控制器，负责业务逻辑、状态管理与事件编排"""
+
+    def __init__(self, view=None):
+        self.view = view
+        # 订阅全局系统事件
+        event_bus.subscribe("request:result_ready", self.handle_result_ready)
+        event_bus.subscribe("bridge:server_status", self.handle_server_status)
+        event_bus.subscribe("bridge:client_status", self.handle_client_status)
+
+    def handle_send_request(self, raw_text: str, framework: str):
+        """处理用户点击发送请求的业务逻辑"""
+        print(f"[ShellController] 触发请求发送，当前框架: {framework}")
+        event_bus.publish("request:send_clicked", {
+            "raw_prompt": raw_text,
+            "framework": framework
+        })
+
+    def handle_framework_change(self, framework_name: str):
+        """处理框架切换的业务逻辑"""
+        event_bus.publish("framework:changed", {"framework": framework_name})
+
+    def handle_result_ready(self, data: dict):
+        """处理 Agent 返回结果：校验最终提示词并决定是否推送给插件端"""
+        final_prompt = data.get("final_prompt", "")
+        parsed_result = data.get("parsed_result", "")
+
+        # 通知视图渲染数据
+        if self.view:
+            self.view.update_results(final_prompt, parsed_result)
+
+        # 业务规则：校验最终提示词是否为空，决定是否通过桥接通道推送给插件端
+        if final_prompt and final_prompt.strip():
+            event_bus.publish("bridge:send_to_extension", {"text": final_prompt})
+            print("[ShellController] 最终提示词校验通过，已向插件端口发送")
+        else:
+            print("[ShellController] 最终提示词为空，已拦截，不向插件发送")
+
+    def handle_server_status(self, data: dict):
+        is_running = data.get("is_running", False)
+        port = data.get("port", 9002)
+        if self.view:
+            self.view.update_server_status(is_running, port, data.get("error", ""))
+
+    def handle_client_status(self, data: dict):
+        state = data.get("state", "init")
+        if self.view:
+            self.view.update_client_status(state)
+第二步：配套更新 modules/shell/main_window.py
+让 MainWindow 引入 ShellController 并把控制权交出去：
+
+Python
+# modules/shell/main_window.py
+import sys
+from PySide2.QtCore import Qt
+from PySide2.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QTabWidget,
+    QVBoxLayout,
+    QLabel,
+    QPlainTextEdit,
+    QComboBox,
+    QPushButton,
+    QSplitter,
+    QStatusBar
+)
+from modules.shell.application.shell_controller import ShellController
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("BigShrimp - 请求台")
+        
+        # 实例化应用层控制器，解耦业务逻辑
+        self.controller = ShellController(self)
+        
+        self.init_ui()
+        self.center_window()
+        self.bind_signals()
+
+    def init_ui(self):
+        # 初始化底部状态栏
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+        self.status_bar.showMessage("本地 9002 服务初始化完成")
+
+        # 创建持久化的连接状态指示标签（无底色、无图标，初始为红色未连接）
+        self.connection_label = QLabel("插件未连接")
+        self.connection_label.setStyleSheet("color: red; background: transparent;")
+        self.status_bar.addPermanentWidget(self.connection_label)
+
+        self.tab_widget = QTabWidget()
+        self.setCentralWidget(self.tab_widget)
+
+        # --- Tab 1: 请求台 ---
+        self.tab_request = QWidget()
+        self.init_request_tab()
+        self.tab_widget.addTab(self.tab_request, "请求台")
+
+        # --- Tab 2: 暂留 ---
+        self.tab_placeholder = QWidget()
+        placeholder_layout = QVBoxLayout(self.tab_placeholder)
+        placeholder_label = QLabel("暂留页面")
+        placeholder_label.setAlignment(Qt.AlignCenter)
+        placeholder_layout.addWidget(placeholder_label)
+        self.tab_widget.addTab(self.tab_placeholder, "暂留")
+
+    def init_request_tab(self):
+        main_splitter = QSplitter(Qt.Horizontal, self.tab_request)
+        
+        # --- 左侧列 ---
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(5, 5, 5, 5)
+
+        left_layout.addWidget(QLabel("原始提示词："))
+        self.input_edit = QPlainTextEdit()
+        left_layout.addWidget(self.input_edit)
+
+        left_layout.addWidget(QLabel("提示词处理框架（下拉选择）："))
+        self.framework_combo = QComboBox()
+        self.framework_combo.addItems(["默认框架", "框架选项A", "框架选项B"])
+        left_layout.addWidget(self.framework_combo)
+
+        left_layout.addWidget(QLabel("框架预览："))
+        self.framework_preview_edit = QPlainTextEdit()
+        left_layout.addWidget(self.framework_preview_edit)
+
+        left_layout.addWidget(QLabel("反馈结果："))
+        self.raw_result_edit = QPlainTextEdit()
+        left_layout.addWidget(self.raw_result_edit)
+
+        # --- 右侧列 ---
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(5, 5, 5, 5)
+
+        right_layout.addWidget(QLabel("最终提示词"))
+        self.final_preview_edit = QPlainTextEdit()
+        right_layout.addWidget(self.final_preview_edit)
+
+        self.send_button = QPushButton("发送请求")
+        right_layout.addWidget(self.send_button)
+
+        right_layout.addWidget(QLabel("结果解析："))
+        self.parsed_result_edit = QPlainTextEdit()
+        right_layout.addWidget(self.parsed_result_edit)
+
+        main_splitter.addWidget(left_widget)
+        main_splitter.addWidget(right_widget)
+        main_splitter.setSizes([600, 600])
+
+        tab_layout = QVBoxLayout(self.tab_request)
+        tab_layout.addWidget(main_splitter)
+
+    def bind_signals(self):
+        """绑定 UI 控件信号"""
+        self.send_button.clicked.connect(self.on_send_clicked)
+        self.framework_combo.currentTextChanged.connect(self.on_framework_changed)
+
+    def on_send_clicked(self):
+        raw_text = self.input_edit.toPlainText()
+        framework = self.framework_combo.currentText()
+        self.parsed_result_edit.setPlainText("正在发送至 Agent 核心处理...")
+        self.controller.handle_send_request(raw_text, framework)
+
+    def on_framework_changed(self, framework_name: str):
+        self.controller.handle_framework_change(framework_name)
+        self.framework_preview_edit.setPlainText(f"[{framework_name}] 对应的模板预览加载中...")
+
+    # --- 纯视图更新接口供 Controller 调用 ---
+
+    def update_results(self, final_prompt: str, parsed_result: str):
+        self.final_preview_edit.setPlainText(final_prompt)
+        self.parsed_result_edit.setPlainText(parsed_result)
+
+    def update_server_status(self, is_running: bool, port: int, error: str):
+        if is_running:
+            self.status_bar.showMessage(f"本地 WebSocket 服务已成功开启 (端口: {port})")
+        else:
+            self.status_bar.showMessage(f"本地 WebSocket 服务启动失败 (端口: {port}): {error}")
+
+    def update_client_status(self, state: str):
+        if state == "connected":
+            self.connection_label.setText("插件已链接")
+            self.connection_label.setStyleSheet("color: green; background: transparent;")
+        elif state == "disconnected":
+            self.connection_label.setText("插件断开")
+            self.connection_label.setStyleSheet("color: red; background: transparent;")
+        else:
+            self.connection_label.setText("插件未连接")
+            self.connection_label.setStyleSheet("color: red; background: transparent;")
+
+    def center_window(self):
+        screen = QApplication.primaryScreen().availableGeometry()
+        width = int(screen.width() * 0.85)
+        height = int(screen.height() * 0.85)
+        self.resize(width, height)
+        
+        x = screen.x() + (screen.width() - width) // 2
+        y = screen.y() + (screen.height() - height) // 2
+        self.move(x, y)
+我现在需要到其他地方登录电脑，我们如何继续这个研究
+要在换到另一台电脑后无缝继续我们的开发，我们可以通过 代码同步 和 AI 上下文迁移 两步来完成，确保不会丢失任何进度。
+
+第一步：代码与环境同步（Git + 依赖）
+在离开当前电脑前，建议将代码打包或提交到远程仓库：
+
+提交代码到 Git 仓库（如果尚未初始化，可以在根目录下执行）：
+
+Bash
+git init
+git add .
+git commit -m "feat: complete WebSocket bridge, heartbeat polling, and Shell Controller architecture"
+# 推送到你的远程仓库（如 GitHub / GitLab / Gitee）
+git remote add origin <你的仓库地址>
+git push -u origin main
+在新电脑上拉取代码：
+
+Bash
+git clone <你的仓库地址>
+cd BigShrimp
+配置 Python 环境：
+确保新电脑安装了与当前一致的 Python 版本（推荐 Python 3.8+），并安装 PySide2 依赖：
+
+Bash
+pip install PySide2
+第二步：AI 上下文快速恢复（Bootstrap Prompt）
+由于切换电脑后会开启新的对话窗口，你可以直接复制下面这段 “上下文引导词” 发给我。我会在一瞬间“恢复记忆”，无缝接上当前的代码进度：
+
+复制以下内容作为新对话的第一条消息：
+
+Plaintext
+我们正在开发一个基于 Python、PySide2 和 Modular Monolith（模块化单体）架构的桌面应用 "BigShrimp"。
+项目结构采用 Clean Architecture，核心组件包括：
+1. 全局单例 EventBus (`shared/infrastructure/event_bus.py`) 用于跨模块解耦通信。
+2. Shell 模块：包含 MainWindow 视图与 ShellController 控制层，实现了请求台布局、下拉框架选择以及底部状态栏。
+3. Bridge 模块：基于 QWebSocketServer（端口 9002）的 WebSocket 服务端，实现了 3 秒心跳轮询、僵尸连接清理、以及动态广播服务器与客户端（Chrome 插件）的连接状态（绿色已链接、红色断开/未连接）。
+4. Agent 模块：提示词处理引擎，负责监听请求并组装最终提示词。
+
+目前我们已经完成了 UI 与业务逻辑的解耦（ShellController），并且打通了“点击发送 -> 校验最终提示词是否为空 -> 通过 WebSocket 推送给 Chrome 插件”的完整闭环。
+接下来我们要继续开发新的功能模块，请问准备好了吗？
+你希望在换电脑前，先把当前的代码压缩打包发给你，还是直接在远程仓库处理？

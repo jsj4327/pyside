@@ -61,6 +61,18 @@ class IssueManager:
             print(f"Save Error: {e}")
             return None
 
+    def overwrite(self, filepath, data):
+        """覆盖已有文件（编辑保存）"""
+        if not os.path.exists(filepath):
+            return False
+        try:
+            with open(filepath, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            return True
+        except Exception as e:
+            print(f"Overwrite Error: {e}")
+            return False
+
     def delete(self, filepath):
         try:
             if os.path.exists(filepath):
@@ -119,6 +131,7 @@ class BugNoteTab(QWidget):
         self.current_image = None
         self.is_loading = False
         self._all_issues = []  # 缓存全量数据用于搜索过滤
+        self.edit_file_path = None  # 当前正在编辑的记录路径（选中历史条目时赋值）
         self.init_ui()
         self.bind_signals()
         self.load_issue_list()
@@ -154,13 +167,21 @@ class BugNoteTab(QWidget):
         btn_cl.clicked.connect(lambda: self.module_list.clearSelection())
         btn_mod_layout.addWidget(btn_sa); btn_mod_layout.addWidget(btn_cl); btn_mod_layout.addStretch()
 
-        # --- 操作按钮 ---
-        self.save_button = QPushButton("💾 保存 (Ctrl+S)")
+        # --- 操作按钮：新增提交按钮 ---
+        self.save_button = QPushButton("💾 保存修改 (Ctrl+S)")
         self.save_button.setStyleSheet("""
             QPushButton { background-color: #4CAF50; color: white; font-weight: bold; 
                           padding: 6px 15px; border-radius: 4px; }
             QPushButton:hover { background-color: #45a049; }""")
-        self.save_button.clicked.connect(self.save_issue)
+        self.save_button.clicked.connect(self.save_edit_issue)
+
+        self.submit_button = QPushButton("✅ 提交新建 (Ctrl+Enter)")
+        self.submit_button.setStyleSheet("""
+            QPushButton { background-color: #3B82F6; color: white; font-weight: bold; 
+                          padding: 6px 15px; border-radius: 4px; }
+            QPushButton:hover { background-color: #2563EB; }""")
+        self.submit_button.clicked.connect(self.submit_new_issue)
+
         self.prompt_button = QPushButton("📋 复制 Prompt (Ctrl+Shift+C)")
         self.prompt_button.setStyleSheet("padding: 6px 15px;")
         self.prompt_button.clicked.connect(self.copy_prompt)
@@ -250,7 +271,12 @@ class BugNoteTab(QWidget):
         mv.addWidget(self.module_list); mv.addLayout(btn_mod_layout)
         cl.addWidget(mc, 3, 1, 1, 3)
         cl.addWidget(mk_lbl("标签:"), 4, 0); cl.addWidget(self.tag, 4, 1, 1, 3)
-        al = QHBoxLayout(); al.addStretch(); al.addWidget(self.save_button); al.addWidget(self.prompt_button)
+        # 按钮行：保存 + 提交 + 复制prompt
+        al = QHBoxLayout()
+        al.addStretch()
+        al.addWidget(self.save_button)
+        al.addWidget(self.submit_button)
+        al.addWidget(self.prompt_button)
         cl.addLayout(al, 5, 0, 1, 4)
         cl.setRowStretch(1, 1)
 
@@ -271,7 +297,8 @@ class BugNoteTab(QWidget):
         ml = QHBoxLayout(self); ml.setContentsMargins(8, 8, 8, 8); ml.addWidget(main_splitter)
 
         # 快捷键
-        QShortcut(QKeySequence("Ctrl+S"), self, self.save_issue)
+        QShortcut(QKeySequence("Ctrl+S"), self, self.save_edit_issue)
+        QShortcut(QKeySequence("Ctrl+Enter"), self, self.submit_new_issue)
         QShortcut(QKeySequence("Ctrl+Shift+C"), self, self.copy_prompt)
         QShortcut(QKeySequence.Delete, self, self.delete_selected_issue)
 
@@ -353,6 +380,9 @@ class BugNoteTab(QWidget):
         )
         if reply == QMessageBox.Yes:
             if self.manager.delete(fp):
+                # 如果删除的是当前编辑条目，清空编辑标记
+                if self.edit_file_path == fp:
+                    self.edit_file_path = None
                 self.status_message.emit(f"🗑️ 已删除: {os.path.basename(fp)}")
                 self.load_issue_list()
             else:
@@ -403,7 +433,33 @@ class BugNoteTab(QWidget):
         QApplication.clipboard().setText(text)
         self.status_message.emit("📋 AI Prompt 已复制到剪贴板")
 
-    def save_issue(self):
+    # 【保存修改】覆盖当前加载的历史条目
+    def save_edit_issue(self):
+        t = self.title.text().strip()
+        if not t:
+            self.status_message.emit("⚠️ 标题不能为空！")
+            self.title.setFocus()
+            return
+        if not self.edit_file_path or not os.path.exists(self.edit_file_path):
+            QMessageBox.information(self, "提示", "当前未加载任何历史记录，无法保存修改，请使用【提交新建】")
+            return
+
+        data = {
+            "title": t, "description": self.description.toPlainText(),
+            "type": self.type_box.currentText(), "level": self.level_box.currentText(),
+            "module": self.get_selected_modules(), "tag": self.tag.text(),
+            "time": datetime.datetime.now().isoformat(),
+            "environment": self.environment_info(), "screenshot": self.current_image
+        }
+        ok = self.manager.overwrite(self.edit_file_path, data)
+        if ok:
+            self.status_message.emit(f"✅ 已保存修改: {os.path.basename(self.edit_file_path)}")
+            self.load_issue_list()
+        else:
+            self.status_message.emit("❌ 保存修改失败")
+
+    # 【提交新建】生成全新独立记录，清空表单
+    def submit_new_issue(self):
         t = self.title.text().strip()
         if not t:
             self.status_message.emit("⚠️ 标题不能为空！")
@@ -418,17 +474,18 @@ class BugNoteTab(QWidget):
         }
         path = self.manager.save(data)
         if path:
-            self.status_message.emit(f"✅ 已保存: {os.path.basename(path)}")
+            self.status_message.emit(f"✅ 提交成功，新建记录: {os.path.basename(path)}")
             self.load_issue_list()
             self.clear_form()
         else:
-            self.status_message.emit("❌ 保存失败，请检查磁盘权限")
+            self.status_message.emit("❌ 提交失败，请检查磁盘权限")
 
     def clear_form(self):
         self.is_loading = True
         self.title.clear(); self.description.clear(); self.tag.clear()
         self.type_box.setCurrentIndex(0); self.level_box.setCurrentIndex(0)
         self.module_list.clearSelection()
+        self.edit_file_path = None  # 清空编辑标记
         self.is_loading = False
         self.update_prompt_preview()
 
@@ -446,6 +503,7 @@ class BugNoteTab(QWidget):
             with open(fp, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             self.is_loading = True
+            self.edit_file_path = fp  # 标记当前编辑文件
             self.title.setText(data.get("title", ""))
             self.description.setText(data.get("description", ""))
             self.tag.setText(data.get("tag", ""))
@@ -459,7 +517,7 @@ class BugNoteTab(QWidget):
             self.set_selected_modules(mods)
             self.is_loading = False
             self.update_prompt_preview()
-            self.status_message.emit(f"📂 已加载: {data.get('title', '')}")
+            self.status_message.emit(f"📂 已加载编辑: {data.get('title', '')}")
         except Exception as e:
             self.status_message.emit(f"❌ 加载失败: {e}")
 
