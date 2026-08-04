@@ -23,7 +23,7 @@ Thumbs.db
 *.swo
 
 # Qt / PySide / PyQt 构建文件
-ui_*.py
+
 *_rc.py
 *.qmlc
 *.jsc
