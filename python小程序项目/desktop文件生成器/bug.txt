@@ -1,0 +1,49 @@
+这个问题出现的原因是：工作目录 不一致。
+
+当你双击 .desktop 文件启动程序时，Linux 系统通常会将“当前工作目录”设定为用户的家目录（例如 /home/us/），而不是脚本所在的目录。而你的代码中 DATA_FILE = "launcher_apps.json" 使用的是相对路径，导致程序去家目录找文件，结果当然找不到。
+
+有两种解决方法，推荐使用方法一，因为它更稳定。
+
+方法一：修改 Python 代码（推荐）
+我们需要让 Python 程序使用脚本的绝对路径来寻找数据文件。
+
+请修改 startup.py 文件最开头的几行代码：
+
+修改前：
+
+# ... 省略 import ...
+
+# 定义本地数据存储文件
+DATA_FILE = "launcher_apps.json"
+# 获取程序所在目录作为基准路径
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+修改后：
+
+# ... 省略 import ...
+
+# 1. 先获取程序所在目录作为基准路径
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# 2. 定义本地数据存储文件（使用绝对路径拼接）
+# 这样无论从哪里启动，都能精准定位到这个文件夹下的 JSON 文件
+DATA_FILE = os.path.join(BASE_DIR, "launcher_apps.json")
+原理说明：
+os.path.join 会把 BASE_DIR (即 /home/us/桌面/pyside/startup/) 和文件名拼接起来，变成一个完整的绝对路径 /home/us/桌面/pyside/startup/launcher_apps.json。这样无论在哪个目录下运行程序，它都能找到这个文件。
+
+方法二：修改 .desktop 文件（备选）
+如果你不想修改 Python 代码，也可以通过修改 .desktop 文件，强制指定启动时的工作目录。
+
+修改你的 .desktop 文件，在 Exec= 下一行添加 Path=：
+
+[Desktop Entry]
+Type=Application
+Name=startup程序启动器
+Comment=启动多个py程序
+# 强制设定工作目录为脚本所在目录
+Path=/home/us/桌面/pyside/startup
+Exec=/usr/bin/python3 /home/us/桌面/pyside/startup/startup.py
+Icon=startup
+Terminal=false
+Categories=Utility;Graphics;
+总结：
+建议使用 方法一。因为以后如果你移动了文件夹，方法二需要手动修改 .desktop 里的路径，而方法一由于是基于脚本自身位置计算路径的，移动到哪里都能自动适配。

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=startup程序启动器
+Comment=启动多个py程序
+Exec=/usr/bin/python3 /home/us/桌面/pyside/startup/startup.py
+Icon=startup
+Terminal=false
+Categories=Utility;Graphics;

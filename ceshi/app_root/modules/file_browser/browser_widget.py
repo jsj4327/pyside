@@ -2,12 +2,12 @@
 import os
 import json
 from PySide2.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QSplitter, 
-    QTreeView, QFileSystemModel, QTableWidget, 
-    QTableWidgetItem, QHeaderView, QPushButton, 
+    QWidget, QVBoxLayout, QHBoxLayout, QSplitter,
+    QTreeView, QFileSystemModel, QTableWidget,
+    QTableWidgetItem, QHeaderView, QPushButton,
     QLineEdit, QTextEdit, QLabel, QMessageBox
 )
-from PySide2.QtCore import Qt, QDir
+from PySide2.QtCore import Qt, QDir, QTimer
 from core import FileAnalyzer
 
 class FileBrowserMainWidget(QWidget):
@@ -18,7 +18,11 @@ class FileBrowserMainWidget(QWidget):
         self._init_ui()
         self._bind_signals()
         self._refresh_file_table()
-        # 移除了轮询定时器
+
+    @property
+    def tree(self):
+        """将旧的 tree 属性安全映射到实际的 tree_view 上，确保持久化兼容"""
+        return getattr(self, 'tree_view', None)
 
     def _init_ui(self):
         horizontal_splitter = QSplitter(Qt.Horizontal)
@@ -33,7 +37,8 @@ class FileBrowserMainWidget(QWidget):
         self.tree_view = QTreeView()
         self.tree_view.setModel(self.tree_model)
         self.tree_view.setRootIndex(self.tree_model.index(self.current_work_dir))
-        self.tree_view.hideColumn(1); self.tree_view.hideColumn(2)
+        self.tree_view.hideColumn(1)
+        self.tree_view.hideColumn(2)
         self.tree_view.hideColumn(3)
         self.tree_view.header().setSectionResizeMode(0, QHeaderView.Stretch)
         left_layout.addWidget(self.tree_view)
@@ -48,7 +53,8 @@ class FileBrowserMainWidget(QWidget):
         self.btn_refresh = QPushButton("🔄 刷新")
         self.path_display = QLineEdit()
         self.path_display.setReadOnly(True)
-        btn_bar.addWidget(self.btn_up); btn_bar.addWidget(self.btn_refresh)
+        btn_bar.addWidget(self.btn_up)
+        btn_bar.addWidget(self.btn_refresh)
         btn_bar.addWidget(self.path_display)
         mid_layout.addLayout(btn_bar)
 
@@ -66,25 +72,25 @@ class FileBrowserMainWidget(QWidget):
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
         right_layout.setContentsMargins(0, 0, 0, 0)
-        
+
         tool_bar = QHBoxLayout()
         self.btn_ai = QPushButton("🤖 发送给 AI 分析")
         self.btn_ai.setStyleSheet("background-color: #4CAF50; color: white; padding: 5px; font-weight: bold;")
         self.btn_ai.clicked.connect(self._send_to_ai_via_ws)
         self.btn_ai.setEnabled(False)
         tool_bar.addWidget(self.btn_ai)
-        
+
         self.text_preview = QTextEdit()
         self.text_preview.setReadOnly(True)
         right_layout.addLayout(tool_bar)
         right_layout.addWidget(self.text_preview)
-        
+
         horizontal_splitter.addWidget(right_panel)
         horizontal_splitter.setStretchFactor(0, 1)
         horizontal_splitter.setStretchFactor(1, 1.3)
         horizontal_splitter.setStretchFactor(2, 2)
         horizontal_splitter.setSizes([220, 360, 620])
-        
+
         root_layout = QVBoxLayout(self)
         root_layout.addWidget(horizontal_splitter)
 
@@ -105,50 +111,68 @@ class FileBrowserMainWidget(QWidget):
             self.btn_ai.setEnabled(False)
 
     def _send_to_ai_via_ws(self):
-        """【修改】通过 WebSocket 发送文件内容给插件"""
-        if not self.current_file_path: return
+        """通过 WebSocket 发送文件内容给插件（即发即走，不卡顿）"""
+        if not self.current_file_path:
+            return
 
-        # 获取主窗口实例
         main_win = self.window()
         if not main_win or not hasattr(main_win, 'bridge_server'):
             QMessageBox.warning(self, "错误", "Bridge 服务未启动")
             return
 
+        if not main_win.bridge_server.clients:
+            QMessageBox.warning(self, "警告", "没有插件客户端连接，请确保 Chrome 插件已连接")
+            return
+
         try:
-            # 1. 读取文件
             content = FileAnalyzer.read_text_file(self.current_file_path)
             filename = os.path.basename(self.current_file_path)
 
-            # 2. 构造 JSON 数据
             payload = {
-                "type": "ANALYZE_REQUEST", 
+                "type": "ANALYZE_REQUEST",
                 "filename": filename,
                 "content": content,
                 "message": f"请帮我分析文件: {filename}"
             }
 
-            # 3. 调用 bridge 发送
-            main_win.bridge_server.send_to_all_clients(payload)
-            
-            # 4. UI 反馈
-            self.btn_ai.setText("⏳ 已发送，等待插件响应...")
-            self.btn_ai.setEnabled(False)
-            if main_win.statusBar():
-                main_win.statusBar().showMessage(f"📤 已通过 WebSocket 发送 '{filename}'", 3000)
+            success = False
+            for attempt in range(3):
+                try:
+                    main_win.bridge_server.send_to_all_clients(payload)
+                    success = True
+                    break
+                except Exception as e:
+                    print(f"[发送] 第 {attempt+1} 次尝试失败: {e}")
+                    if attempt == 2:
+                        raise
+                    QTimer.singleShot(500, lambda: None)
+
+            if success:
+                if main_win.statusBar():
+                    main_win.statusBar().showMessage(f"📤 已成功发送 '{filename}' 给插件", 3000)
+                # 核心：发送成功后立即重置按钮，恢复可用状态
+                self._reset_ai_button()
+            else:
+                raise Exception("发送失败，请检查插件连接")
 
         except Exception as e:
             QMessageBox.critical(self, "错误", f"发送失败: {str(e)}")
             self._reset_ai_button()
 
     def append_ai_result(self, result_text):
-        """
-        【新增】供 MainWindow 调用，显示 AI 返回的结果
-        """
-        self.text_preview.append("\n" + "="*30 + "\n")
+        """供 MainWindow 调用，异步显示 AI 返回的结果（已完整还原）"""
+        if not result_text:
+            self.text_preview.append("\n" + "=" * 30 + "\n")
+            self.text_preview.append("【AI 分析结果】：\n")
+            self.text_preview.append("(空结果)")
+            if self.window() and self.window().statusBar():
+                self.window().statusBar().showMessage("⚠️ AI 返回空结果", 3000)
+            return
+
+        self.text_preview.append("\n" + "=" * 30 + "\n")
         self.text_preview.append("【AI 分析结果】：\n")
         self.text_preview.append(result_text)
-        self._reset_ai_button()
-        
+
         if self.window() and self.window().statusBar():
             self.window().statusBar().showMessage("✅ AI 分析完成", 3000)
 
@@ -157,7 +181,7 @@ class FileBrowserMainWidget(QWidget):
         if self.file_table.selectedItems():
             self.btn_ai.setEnabled(True)
 
-    # --- 以下为原有的文件操作逻辑，无需变更 ---
+    # --- 文件操作与浏览逻辑 ---
     def _refresh_file_table(self):
         self.file_table.setRowCount(0)
         self.path_display.setText(self.current_work_dir)
@@ -170,12 +194,12 @@ class FileBrowserMainWidget(QWidget):
             filename = info.fileName()
             size_str = f"{info.size()} B" if info.size() < 1024 else f"{info.size() / 1024:.1f} KB"
             total, _, _, is_bin = FileAnalyzer.stat_file_lines(full_path)
-            
+
             item_name = QTableWidgetItem(filename)
             item_name.setData(Qt.UserRole, full_path)
             item_size = QTableWidgetItem(size_str)
             line_item = QTableWidgetItem(str(total) if not is_bin else "二进制")
-            
+
             self.file_table.setItem(row, 0, item_name)
             self.file_table.setItem(row, 1, item_size)
             self.file_table.setItem(row, 2, line_item)
@@ -207,6 +231,7 @@ class FileBrowserMainWidget(QWidget):
             content = FileAnalyzer.read_text_file(file_path)
             self.text_preview.setText(content)
             msg = f"文件：{os.path.basename(file_path)} | 总行数:{total} | 有效行:{valid}"
-            if self.window(): self.window().statusBar().showMessage(msg, 8000)
+            if self.window():
+                self.window().statusBar().showMessage(msg, 8000)
         except Exception as e:
             self.text_preview.setText(f"读取失败：{str(e)}")

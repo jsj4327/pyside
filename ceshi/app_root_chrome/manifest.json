@@ -1,20 +1,26 @@
 {
-  "manifest_version": 2,
-  "name": "Shadow DOM AI 助手",
-  "version": "2.1",
-  "description": "修复点击无反应问题",
+  "manifest_version": 3,
+  "name": "Chat Bridge Injector",
+  "version": "1.0",
+  "description": "将接收到的消息注入到当前页面的聊天输入框并发送",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "ws://127.0.0.1:9002/*",
+    "<all_urls>"
+  ],
   "background": {
-    "scripts": ["background.js"],
-    "persistent": false
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "打开/关闭 注入面板"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "run_at": "document_end" 
+      "js": ["content_script.js"],
+      "run_at": "document_end"
     }
-  ],
-  "permissions": [
-    "activeTab"
   ]
 }
