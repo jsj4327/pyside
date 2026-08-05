@@ -1,16 +1,16 @@
-// content_script.js - 精准定位最新问题与流式接收 AI 回复（完整原版 + 自动捕获）
+// content_script.js - 精准定位最新问题与流式接收 AI 回复（完整版 + 自动捕获 + port 重连）
 
 let visible = false, panel = null, port = null;
 let observer = null;
 let isWaitingForAnswer = false;
 let answerCheckTimer = null;
 let processedAnswerId = null;
-let submittedText = ''; // 存储当前提交的问题文本
+let submittedText = '';
 
 let pollingTimer = null;
 let currentAnswerElement = null;
 let lastExtractedText = '';
-let stabilityTimer = null; // 用于检测流式输出是否结束的防抖定时器
+let stabilityTimer = null;
 
 // ============================================
 // 创建面板
@@ -36,7 +36,6 @@ function createPanel() {
     border: 1px solid #e8e8e8;
   `;
 
-  // ---- 标题栏 ----
   const h = document.createElement('div');
   h.style.cssText = `
     background: #f5f5f5;
@@ -59,28 +58,18 @@ function createPanel() {
   `;
   c.appendChild(h);
 
-  // ---- 主体 ----
   const b = document.createElement('div');
   b.style.cssText = `padding:14px 16px 16px 16px;background:#fafafa;max-height:620px;overflow-y:auto;`;
   b.id = 'body';
   b.innerHTML = `
-    <!-- 标签：请求 -->
     <div style="font-size:12px;font-weight:500;color:#888;margin-bottom:6px;">请求</div>
-
-    <!-- 主文本框（请求） -->
     <textarea id="content" style="width:100%;height:80px;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-family:monospace;font-size:13px;resize:vertical;background:#fff;color:#333;box-sizing:border-box;outline:none;">等待接收请求...</textarea>
-
-    <!-- 两个按钮 -->
     <div style="display:flex;gap:8px;margin-top:8px;margin-bottom:8px;">
       <button id="send-page" style="flex:1;padding:8px 0;background:#4CAF50;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:500;font-size:13px;">📤 发送到页面</button>
       <button id="send-client" style="flex:1;padding:8px 0;background:#2196F3;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:500;font-size:13px;">📤 发回到客户端</button>
     </div>
-
-    <!-- ===== AI 反馈区域 ===== -->
     <div style="font-size:12px;font-weight:500;color:#888;margin-top:6px;margin-bottom:4px;">AI 反馈 (支持自动捕获)</div>
     <textarea id="ai-feedback" readonly style="width:100%;height:300px;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-family:monospace;font-size:13px;resize:vertical;background:#f9f9f9;color:#333;box-sizing:border-box;outline:none;">等待 AI 反馈...</textarea>
-
-    <!-- 反馈 -->
     <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#888;border-top:1px solid #eee;padding-top:10px;margin-top:8px;">
       <span style="font-weight:500;">反馈</span>
       <span id="fb" style="color:#999;">就绪</span>
@@ -168,15 +157,13 @@ function createPanel() {
 }
 
 // ============================================
-// 核心：AI 回复监听与流式接收（防抖与稳定性优化）
+// AI 回复监听与流式接收
 // ============================================
-
 function startListeningForAnswer(questionText = '') {
   isWaitingForAnswer = true;
   processedAnswerId = null;
   lastExtractedText = '';
 
-  // 清理旧的定时器与观察者
   stopListening();
 
   const statusEl = document.getElementById('fb');
@@ -185,32 +172,26 @@ function startListeningForAnswer(questionText = '') {
   statusEl.textContent = '⏳ 正在监听 AI 响应...';
   statusEl.style.color = '#f39c12';
 
-  // 创建 MutationObserver 实时捕获流式输出
   observer = new MutationObserver((mutations) => {
     if (!isWaitingForAnswer) return;
 
-    // 尝试在页面中寻找或追踪当前的答案容器（支持问题匹配或自动抓取最新卡片）
     if (!currentAnswerElement || !document.body.contains(currentAnswerElement)) {
       currentAnswerElement = findAnswerElement(document.body, questionText);
     }
 
     if (currentAnswerElement) {
       const textContent = extractAnswerText(currentAnswerElement);
-      
-      // 如果提取到了有效内容
+
       if (textContent && textContent.trim().length > 0) {
-        // 实时显示流式输出的内容
         feedbackEl.value = textContent;
         statusEl.textContent = '🔄 AI 正在流式输出...';
         statusEl.style.color = '#3498db';
 
-        // 核心防抖逻辑：检测文本是否停止增长（即流式输出完毕）
         if (textContent !== lastExtractedText) {
           lastExtractedText = textContent;
-          
+
           if (stabilityTimer) clearTimeout(stabilityTimer);
-          
-          // 如果 1.5 秒内文本没有再发生变化，则认为 AI 回复已完成
+
           stabilityTimer = setTimeout(() => {
             if (isWaitingForAnswer) {
               finishReceivingAnswer(textContent);
@@ -228,7 +209,6 @@ function startListeningForAnswer(questionText = '') {
     attributes: true
   });
 
-  // 超时处理（60秒未完成则强行收尾）
   answerCheckTimer = setTimeout(() => {
     if (isWaitingForAnswer) {
       if (lastExtractedText.trim().length > 0) {
@@ -242,7 +222,6 @@ function startListeningForAnswer(questionText = '') {
     }
   }, 60000);
 
-  // 启动辅助轮询
   startPolling(questionText);
 }
 
@@ -282,7 +261,7 @@ function stopListening() {
 
 function startPolling(questionText) {
   if (pollingTimer) clearInterval(pollingTimer);
-  
+
   pollingTimer = setInterval(() => {
     if (!isWaitingForAnswer) {
       clearInterval(pollingTimer);
@@ -299,8 +278,7 @@ function startPolling(questionText) {
       if (textContent && textContent !== lastExtractedText) {
         lastExtractedText = textContent;
         document.getElementById('ai-feedback').value = textContent;
-        
-        // 重置防抖
+
         if (stabilityTimer) clearTimeout(stabilityTimer);
         stabilityTimer = setTimeout(() => {
           if (isWaitingForAnswer) {
@@ -313,9 +291,8 @@ function startPolling(questionText) {
 }
 
 // ============================================
-// 核心：精准定位“刚发送的问题”或自动识别最新答案卡片
+// 查找答案元素
 // ============================================
-
 function findAnswerElement(root, questionText) {
   const answerSelectors = [
     '.answer-common-card',
@@ -324,7 +301,6 @@ function findAnswerElement(root, questionText) {
     '#qk-markdown-react'
   ];
 
-  // 如果没有指定问题文本（例如用户在网页上直接手动发送），直接寻找页面中“最新生成”的答案卡片
   if (!questionText) {
     let allAnswers = [];
     for (const sel of answerSelectors) {
@@ -335,12 +311,11 @@ function findAnswerElement(root, questionText) {
       }
     }
     if (allAnswers.length > 0) {
-      return allAnswers[allAnswers.length - 1]; // 返回最后一个（最新的）
+      return allAnswers[allAnswers.length - 1];
     }
     return null;
   }
 
-  // 1. 获取所有匹配的问题节点
   const questionSelectors = [
     '.chat-question-card-wrap',
     '.question-text-card'
@@ -358,14 +333,11 @@ function findAnswerElement(root, questionText) {
   }
 
   if (matchedQuestions.length === 0) {
-    // 降级：若未找到匹配问题，直接 fallback 到最新答案卡片
     return findAnswerElement(root, '');
   }
 
-  // 2. 【关键】只取最后出现的一个（即刚刚最新发送的那条问题）
   const latestQuestion = matchedQuestions[matchedQuestions.length - 1];
 
-  // 3. 从这个最新问题向上找到它的外层消息容器
   let container = latestQuestion.closest('.message-select-content-inner-QCE5NQ') ||
                   latestQuestion.closest('.message-select-content-MWGFKC');
   if (!container) {
@@ -375,7 +347,6 @@ function findAnswerElement(root, questionText) {
     }
   }
 
-  // 定义在指定区域内提取答案的内部方法
   const extractFromContainer = (scopeNode) => {
     if (!scopeNode || !scopeNode.querySelector) return null;
     for (const sel of answerSelectors) {
@@ -387,7 +358,6 @@ function findAnswerElement(root, questionText) {
     return null;
   };
 
-  // 4. 优先在最新问题所属的容器内部或下方寻找答案
   if (container) {
     let ans = extractFromContainer(container);
     if (ans) return ans;
@@ -400,7 +370,6 @@ function findAnswerElement(root, questionText) {
     }
   }
 
-  // 5. 顺着最新问题的 DOM 节点往后遍历兄弟元素
   let sibling = latestQuestion.nextElementSibling;
   while (sibling) {
     const ans = extractFromContainer(sibling);
@@ -408,12 +377,11 @@ function findAnswerElement(root, questionText) {
     sibling = sibling.nextElementSibling;
   }
 
-  // 6. 最终兜底
   return findAnswerElement(root, '');
 }
 
 // ============================================
-// 全局自动捕获监听器（无需面板发送，网页新答案即自动捕获）
+// 全局自动捕获
 // ============================================
 function initGlobalAutoCapture() {
   let globalObserver = new MutationObserver((mutations) => {
@@ -435,7 +403,7 @@ function initGlobalAutoCapture() {
 }
 
 // ============================================
-// 提取答案纯文本
+// 提取答案文本（保留缩进）
 // ============================================
 function extractAnswerText(element) {
   if (!element) return '';
@@ -463,7 +431,6 @@ function extractAnswerText(element) {
     }
   }
 
-  // 处理代码块
   const codeBlocks = clone.querySelectorAll ? clone.querySelectorAll('.qw-md-code, .contain-layout-style') : [];
   for (const codeBlock of codeBlocks) {
     const langSpan = codeBlock.querySelector('.font-medium.mr-auto');
@@ -474,11 +441,10 @@ function extractAnswerText(element) {
       codeText = codeElement.textContent || '';
     }
     const wrapper = document.createElement('div');
-    wrapper.textContent = `\n\n【代码块 ${lang}】\n${codeText.trim()}\n【代码块结束】\n\n`;
+    wrapper.textContent = `\n\n【代码块 ${lang}】\n${codeText}\n【代码块结束】\n\n`;
     codeBlock.parentNode.replaceChild(wrapper, codeBlock);
   }
 
-  // 处理表格
   const tables = clone.querySelectorAll ? clone.querySelectorAll('.qk-md-table') : [];
   for (const table of tables) {
     let tableText = '\n';
@@ -487,7 +453,7 @@ function extractAnswerText(element) {
       const cells = row.querySelectorAll('td, th');
       const cellTexts = [];
       for (const cell of cells) {
-        cellTexts.push(cell.textContent.trim());
+        cellTexts.push(cell.textContent);
       }
       tableText += cellTexts.join(' | ') + '\n';
     }
@@ -497,9 +463,8 @@ function extractAnswerText(element) {
   }
 
   let result = clone.textContent || '';
-  result = result.replace(/\n{3,}/g, '\n\n');
-  result = result.replace(/ {2,}/g, ' ');
-  return result.trim();
+  // 保留原始缩进，不 trim 空格
+  return result;
 }
 
 // ============================================
@@ -595,9 +560,24 @@ function togglePanel() {
   visible ? hidePanel() : showPanel();
 }
 
+// ============================================
+// 与 background 通信（带自动重连）
+// ============================================
 function connectPort() {
-  if (port) return;
+  // 如果已有端口，先断开
+  if (port) {
+    try { port.disconnect(); } catch (e) {}
+    port = null;
+  }
+
   port = chrome.runtime.connect({ name: 'panel' });
+
+  port.onDisconnect.addListener(() => {
+    console.log('[Content] Port 断开，尝试重连...');
+    port = null;
+    setTimeout(connectPort, 1000);
+  });
+
   port.onMessage.addListener((msg) => {
     if (msg.type === 'init') {
       updateStatus(msg.connected);
@@ -622,6 +602,8 @@ function connectPort() {
       }
     }
   });
+
+  // 请求初始状态
   chrome.runtime.sendMessage({ action: 'getStatus' }, (resp) => {
     if (resp) {
       updateStatus(resp.connected);
@@ -640,7 +622,9 @@ function connectPort() {
 
 function updateStatus(conn) {
   const dot = document.getElementById('dot');
-  if (dot) dot.style.background = conn ? '#4CAF50' : '#ccc';
+  if (dot) {
+    dot.style.background = conn ? '#4CAF50' : '#ccc';
+  }
 }
 
 document.addEventListener('keydown', (e) => {
@@ -658,5 +642,5 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 createPanel();
-initGlobalAutoCapture(); // 启动全局自动捕获新卡片监听
-console.log('[Content] 智能桥接面板已加载（支持自动捕获），按 Ctrl+Shift+B 切换');
+initGlobalAutoCapture();
+console.log('[Content] 智能桥接面板已加载（支持自动捕获 + port 自动重连），按 Ctrl+Shift+B 切换');

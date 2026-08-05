@@ -1,0 +1,23 @@
+"""全局配置常量"""
+
+# 支持的图片扩展名
+VALID_IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.bmp', '.gif')
+
+# 缩略图相关尺寸
+THUMBNAIL_ICON_SIZE = 100
+THUMBNAIL_ITEM_WIDTH = 120
+THUMBNAIL_ITEM_HEIGHT = 110
+THUMBNAIL_SPACING = 5
+
+# 缩放预览相关参数
+MIN_SCALE = 0.2
+MAX_SCALE = 5.0
+ZOOM_FACTOR = 1.15
+
+# 拖拽自动滚动边距
+DRAG_SCROLL_MARGIN = 30
+DRAG_SCROLL_SPEED = 15
+
+# 窗口默认比例
+WINDOW_SIZE_RATIO = 0.8
+SPLITTER_LEFT_WIDTH = 200

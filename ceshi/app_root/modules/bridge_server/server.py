@@ -18,12 +18,14 @@ class BridgeServer(QObject):
 
         self.clients = []
         self.connection_callback = None
+        self.disconnection_callback = None   # 新增
         self.message_callback = None
 
         self.server.newConnection.connect(self._on_new_connection)
 
-    def listen(self, host, port, connection_callback=None, message_callback=None):
+    def listen(self, host, port, connection_callback=None, disconnection_callback=None, message_callback=None):
         self.connection_callback = connection_callback
+        self.disconnection_callback = disconnection_callback
         self.message_callback = message_callback
 
         if self.server.listen(QHostAddress(host), port):
@@ -39,8 +41,9 @@ class BridgeServer(QObject):
         client_id = id(socket)
         print(f"[Bridge] 📥 客户端连接 ({client_id})")
 
+        # 连接回调，传递当前连接数
         if self.connection_callback:
-            self.connection_callback()
+            self.connection_callback(len(self.clients))
 
         socket.textMessageReceived.connect(lambda msg: self._process_message(socket, msg))
         socket.disconnected.connect(lambda: self._on_disconnected(socket))
@@ -48,15 +51,12 @@ class BridgeServer(QObject):
     def _process_message(self, socket, message):
         try:
             data = json.loads(message)
-            
-            # ============================================
-            # 新增：处理前端发送的心跳 ping，立刻回复 pong
-            # ============================================
+            # 处理 ping
             if isinstance(data, dict) and data.get("type") == "ping":
                 pong_message = json.dumps({"type": "pong"}, ensure_ascii=False)
                 if socket.state() == QAbstractSocket.ConnectedState:
                     socket.sendTextMessage(pong_message)
-                return  # 拦截心跳消息，不往下走业务回调
+                return
 
             if self.message_callback:
                 self.message_callback(data)
@@ -69,29 +69,23 @@ class BridgeServer(QObject):
             socket.deleteLater()
             print(f"[Bridge] 📤 客户端断开 (剩余: {len(self.clients)})")
 
-    # ============================================
-    # 修改后的广播发送函数（增强稳定性）
-    # ============================================
+        # 断开回调，传递剩余连接数
+        if self.disconnection_callback:
+            self.disconnection_callback(len(self.clients))
+
     def send_to_all_clients(self, data_dict):
-        """
-        【公共接口】向所有连接的客户端广播 JSON 消息
-        """
         if not self.clients:
             print("[Bridge] 没有客户端，跳过发送")
             return
 
         message = json.dumps(data_dict, ensure_ascii=False)
 
-        # 遍历副本，防止修改列表导致问题
         for client in list(self.clients):
             if client.state() == QAbstractSocket.ConnectedState:
                 try:
                     client.sendTextMessage(message)
                 except Exception as e:
                     print(f"[Bridge] 发送给客户端 {id(client)} 失败: {e}")
-                    # 可选：自动移除失效客户端（也可交由断开事件处理）
-                    # if client in self.clients:
-                    #     self.clients.remove(client)
             else:
                 print(f"[Bridge] 客户端 {id(client)} 状态异常，移除")
                 if client in self.clients:
@@ -101,3 +95,6 @@ class BridgeServer(QObject):
         for client in self.clients:
             client.close()
         self.server.close()
+
+    def is_listening(self):
+        return self.server.isListening()

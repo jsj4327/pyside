@@ -21,26 +21,29 @@ if __name__ == "__main__":
 
     window = MainAppWindow()
 
-    # --- 启动 WebSocket Bridge 服务 (使用 Qt 原生) ---
+    # --- 启动 WebSocket Bridge 服务 ---
     try:
         # 定义消息回调
         def on_message_callback(data):
-            # 因为是 Qt 信号槽机制，这里已经是主线程了
             window.on_browser_message(data)
 
-        bridge = BridgeServer(parent=window) # 设置 parent
-        
-        # 直接调用 listen，不需要 run_in_thread
+        # 定义断开回调
+        def on_disconnection_callback(count):
+            window.on_plugin_disconnected(count)
+
+        bridge = BridgeServer(parent=window)
         success = bridge.listen(
             host='127.0.0.1', 
             port=9002,
             connection_callback=window.on_plugin_connected,
+            disconnection_callback=on_disconnection_callback,  # 新增
             message_callback=on_message_callback
         )
 
         if success:
             window.bridge_server = bridge
-            window.set_bridge_status(True, 9002)
+            # 初始状态：运行中，连接数0
+            window.set_bridge_status(True, 9002, 0)
         else:
             window.set_bridge_status(False)
 

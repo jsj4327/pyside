@@ -4,7 +4,8 @@
   "version": "1.0",
   "description": "将接收到的消息注入到当前页面的聊天输入框并发送",
   "permissions": [
-    "storage"
+    "storage",
+    "alarms"
   ],
   "host_permissions": [
     "ws://127.0.0.1:9002/*",

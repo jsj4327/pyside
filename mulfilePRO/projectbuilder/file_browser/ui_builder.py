@@ -1,34 +1,27 @@
 # file_browser/ui_builder.py
-"""
-文件浏览器UI构建器
-"""
+import os
 from PySide2.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QTreeWidget,
-    QLineEdit, QPushButton, QCheckBox, QLabel, 
-    QTextEdit, QHeaderView, QAbstractItemView,
-    QSplitter, QStyle
+    QWidget, QVBoxLayout, QHBoxLayout, QLineEdit,
+    QPushButton, QTreeWidget, QTreeWidgetItem, QHeaderView,
+    QLabel, QSplitter, QTextEdit, QAbstractItemView,
+    QStyle, QCheckBox
 )
-from PySide2.QtCore import Qt
+from PySide2.QtCore import Qt, QDir
 from PySide2.QtGui import QFont
 
 
 class FileBrowserUI:
-    """文件浏览器UI组件构建类"""
-    
     def __init__(self, parent):
         self.parent = parent
-        self._setup_ui()
-    
-    def _setup_ui(self):
-        """构建UI界面"""
+        self._build()
+
+    def _build(self):
         parent = self.parent
-        
-        # 主布局
         main_layout = QVBoxLayout(parent)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(5)
 
-        # ---- 顶部工具栏 ----
+        # 工具栏
         toolbar = QWidget()
         toolbar_layout = QHBoxLayout(toolbar)
         toolbar_layout.setContentsMargins(0, 0, 0, 0)
@@ -63,7 +56,7 @@ class FileBrowserUI:
 
         self.btn_open_dir = QPushButton()
         self.btn_open_dir.setIcon(parent.style().standardIcon(QStyle.SP_DirOpenIcon))
-        self.btn_open_dir.setToolTip("在系统文件管理器中打开当前目录")
+        self.btn_open_dir.setToolTip("在系统文件管理器中打开当前目录 (Ctrl+O)")
         self.btn_open_dir.setFixedSize(30, 30)
         toolbar_layout.addWidget(self.btn_open_dir)
 
@@ -100,12 +93,12 @@ class FileBrowserUI:
 
         self.chk_auto_expand = QCheckBox("自动展开")
         self.chk_auto_expand.setChecked(True)
-        self.chk_auto_expand.setToolTip("加载后自动展开所有文件夹")
+        self.chk_auto_expand.setToolTip("进入文件夹时自动展开所有子目录")
         toolbar_layout.addWidget(self.chk_auto_expand)
 
         main_layout.addWidget(toolbar)
 
-        # ---- 运行按钮 + 状态标签行 ----
+        # 运行按钮 + 状态栏
         status_layout = QHBoxLayout()
         status_layout.setContentsMargins(5, 0, 5, 0)
         status_layout.setSpacing(5)
@@ -113,8 +106,22 @@ class FileBrowserUI:
         self.btn_run = QPushButton()
         self.btn_run.setIcon(parent.style().standardIcon(QStyle.SP_MediaPlay))
         self.btn_run.setToolTip("运行当前项目（检测 main.py）")
-        self.btn_run.setFixedSize(30, 30)
-        self.btn_run.setStyleSheet("background-color: #4CAF50; color: white; border: none; border-radius: 4px;")
+        self.btn_run.setFixedSize(90, 30)
+        self.btn_run.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #43A047;
+            }
+            QPushButton:pressed {
+                background-color: #388E3C;
+            }
+        """)
         status_layout.addWidget(self.btn_run)
 
         self.status_label = QLabel("就绪")
@@ -123,13 +130,13 @@ class FileBrowserUI:
 
         main_layout.addLayout(status_layout)
 
-        # ---- 主体：水平分割（左侧文件树 + 右侧输出） ----
+        # ---- 主体：水平分割（左侧树 + 右侧输出） ----
         splitter = QSplitter(Qt.Horizontal)
 
-        # 左侧文件树
+        # 左侧：文件树（QTreeWidget）
         self.tree = QTreeWidget()
         self.tree.setHeaderLabels(["名称", "行数", "大小", "修改时间"])
-        self.tree.setColumnWidth(0, 300)
+        self.tree.setColumnWidth(0, 280)
         self.tree.setIndentation(20)
         self.tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
@@ -148,16 +155,16 @@ class FileBrowserUI:
         self.tree.setDragEnabled(True)
         self.tree.setAcceptDrops(True)
         self.tree.setDropIndicatorShown(True)
+        self.tree.setDragDropMode(QTreeWidget.InternalMove)
 
         splitter.addWidget(self.tree)
 
-        # 右侧输出控件
+        # 右侧输出面板
         output_widget = QWidget()
         output_layout = QVBoxLayout(output_widget)
         output_layout.setContentsMargins(0, 0, 0, 0)
         output_layout.setSpacing(2)
 
-        # 输出标题和清空按钮
         output_header = QHBoxLayout()
         output_header.addWidget(QLabel("📟 程序输出"))
         output_header.addStretch()
@@ -166,7 +173,6 @@ class FileBrowserUI:
         output_header.addWidget(self.btn_clear_output)
         output_layout.addLayout(output_header)
 
-        # 输出文本框（类似终端）
         self.output_text = QTextEdit()
         self.output_text.setReadOnly(True)
         self.output_text.setFont(QFont("Consolas", 10))
@@ -175,8 +181,6 @@ class FileBrowserUI:
         output_layout.addWidget(self.output_text)
 
         splitter.addWidget(output_widget)
-
-        # 设置初始比例：树占65%，输出占35%
         splitter.setSizes([650, 350])
 
         main_layout.addWidget(splitter, 1)

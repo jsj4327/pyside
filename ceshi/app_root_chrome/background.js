@@ -1,26 +1,45 @@
-// background.js - 增加心跳检测与状态同步
+// background.js - V3 激进保活 + 主动检测 + 即时状态同步
 
 let ws = null;
 let isConnected = false;
 let history = [];
 let panelPort = null;
 
-// ---- 心跳相关变量 ----
-let heartbeatInterval = null;      // 定时发送 ping 的间隔
-let heartbeatTimeout = null;       // 等待 pong 的超时定时器
-const HEARTBEAT_INTERVAL = 30000;  // 30 秒
-const HEARTBEAT_TIMEOUT = 5000;    // 5 秒
+let heartbeatInterval = null;
+let heartbeatTimeout = null;
+const HEARTBEAT_INTERVAL = 10000; // 10 秒
+const HEARTBEAT_TIMEOUT = 5000;
+
+// ============================================
+// 保持 Service Worker 活跃（每 12 秒唤醒）
+// ============================================
+chrome.alarms.create('keepAlive', { periodInMinutes: 0.2 }); // 12 秒，避免使用 periodInSeconds
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'keepAlive') {
+    // 主动检查 WebSocket 状态
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      if (isConnected) {
+        isConnected = false;
+        sendToPanel({ type: 'status', connected: false });
+        console.log('[BG] 检测到连接断开，已发送断开状态');
+      }
+      if (ws) {
+        try { ws.close(); } catch (e) {}
+        ws = null;
+      }
+      connect();
+    }
+  }
+});
 
 // ============================================
 // WebSocket 连接管理
 // ============================================
 function connect() {
-  // 如果已有连接且处于打开或正在连接状态，则直接返回
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
     return;
   }
 
-  // 清理可能残留的定时器
   clearHeartbeatTimers();
 
   ws = new WebSocket('ws://127.0.0.1:9002');
@@ -29,23 +48,19 @@ function connect() {
     isConnected = true;
     sendToPanel({ type: 'status', connected: true });
     console.log('[BG] WebSocket 已连接');
-    // 启动心跳检测
     startHeartbeat();
   };
 
   ws.onclose = () => {
     isConnected = false;
     sendToPanel({ type: 'status', connected: false });
-    console.log('[BG] WebSocket 断开，3秒后重连');
-    // 停止心跳
+    console.log('[BG] WebSocket 断开，立即重连');
     clearHeartbeatTimers();
-    // 3 秒后尝试重连
-    setTimeout(connect, 3000);
+    setTimeout(connect, 500);
   };
 
   ws.onerror = (err) => {
     console.error('[BG] WebSocket 错误:', err);
-    // 发生错误时，主动关闭连接，触发 onclose
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.close();
     }
@@ -54,19 +69,14 @@ function connect() {
   ws.onmessage = (e) => {
     try {
       const data = JSON.parse(e.data);
-      // ---- 心跳响应检测 ----
       if (data.type === 'pong') {
-        // 收到 pong，清除超时定时器
         if (heartbeatTimeout) {
           clearTimeout(heartbeatTimeout);
           heartbeatTimeout = null;
         }
         console.log('[BG] 收到心跳响应 (pong)');
-        // 不将 pong 消息存入历史或转发给面板
         return;
       }
-
-      // 非心跳消息：存入历史并转发给面板
       history.push(data);
       sendToPanel({ type: 'message', data });
     } catch (ex) {
@@ -79,47 +89,35 @@ function connect() {
 // 心跳机制
 // ============================================
 function startHeartbeat() {
-  // 先清理可能残留的定时器
   clearHeartbeatTimers();
-
-  // 首次发送 ping
   sendPing();
-
-  // 定时发送 ping
-  heartbeatInterval = setInterval(() => {
-    sendPing();
-  }, HEARTBEAT_INTERVAL);
+  heartbeatInterval = setInterval(sendPing, HEARTBEAT_INTERVAL);
 }
 
 function sendPing() {
   if (!ws || ws.readyState !== WebSocket.OPEN) {
-    // 连接已断开，停止心跳
     clearHeartbeatTimers();
     return;
   }
 
-  // 如果已有超时定时器，说明上次 ping 还没收到 pong，网络可能有问题
   if (heartbeatTimeout) {
     console.warn('[BG] 上次心跳未收到响应，主动关闭连接');
-    ws.close(); // 触发 onclose，进而重连
+    ws.close();
     return;
   }
 
   try {
     ws.send(JSON.stringify({ type: 'ping' }));
     console.log('[BG] 发送心跳 (ping)');
-
-    // 设置超时定时器
     heartbeatTimeout = setTimeout(() => {
       console.warn('[BG] 心跳超时，未收到 pong，主动关闭连接');
       if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.close(); // 触发 onclose，进而重连
+        ws.close();
       }
       heartbeatTimeout = null;
     }, HEARTBEAT_TIMEOUT);
   } catch (e) {
     console.error('[BG] 发送心跳失败:', e);
-    // 发送失败也视为连接异常，关闭连接
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.close();
     }
@@ -144,9 +142,6 @@ function sendToPanel(msg) {
   if (panelPort) panelPort.postMessage(msg);
 }
 
-// ============================================
-// 监听面板连接
-// ============================================
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name === 'panel') {
     panelPort = port;
@@ -155,9 +150,6 @@ chrome.runtime.onConnect.addListener((port) => {
   }
 });
 
-// ============================================
-// 处理来自面板的消息
-// ============================================
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'sendToClient') {
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -173,7 +165,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
   if (request.action === 'reconnect') {
-    // 手动重连：先关闭现有连接，然后调用 connect
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.close();
     } else {
@@ -189,15 +180,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// ============================================
-// 点击扩展图标切换面板
-// ============================================
 chrome.action.onClicked.addListener((tab) => {
   chrome.tabs.sendMessage(tab.id, { type: 'togglePanel' });
 });
 
-// ============================================
-// 启动连接
-// ============================================
 connect();
 console.log('[BG] 后台服务已启动');
