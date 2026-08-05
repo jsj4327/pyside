@@ -13,6 +13,7 @@ from modules import get_file_browser_module_widget
 from modules.token_manager import TokenManagerWidget
 from modules.ai_splitter import AISplitterWidget, AIRecordWidget
 from modules.source_viewer import SourceViewerWidget
+from modules.project_creator import get_project_creator_module_widget
 from config import ICON_FILE, WINDOW_SCALE_RATIO
 
 
@@ -81,6 +82,9 @@ class MainAppWindow(QMainWindow):
         if hasattr(self, 'source_viewer'):
             self.source_viewer.handle_ai_response(result_text)
 
+        if hasattr(self, 'project_creator'):
+            self.project_creator.append_ai_result(result_text)
+
     # ---------- 窗口设置 ----------
     def _set_window_icon(self):
         if os.path.exists(ICON_FILE):
@@ -124,6 +128,10 @@ class MainAppWindow(QMainWindow):
 
         self.source_viewer = SourceViewerWidget()
         tab_widget.addTab(self.source_viewer, "📄 源码预览")
+
+        # 新增：项目创建器 Tab
+        self.project_creator = get_project_creator_module_widget()
+        tab_widget.addTab(self.project_creator, "✨ 新建项目")
 
         self.setCentralWidget(tab_widget)
 
