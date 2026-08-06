@@ -1,260 +1,161 @@
 # -*- coding:utf-8 -*-
 import os
-from PySide2.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QPushButton, QTextEdit, QGroupBox, QSplitter,
-    QMessageBox, QProgressBar
-)
-from PySide2.QtCore import Qt, Signal, QTimer
+import json
+import re
+from PySide2.QtWidgets import QWidget, QMessageBox, QMenu, QAction
+from PySide2.QtCore import Qt, QTimer, Signal
 
-from .prompt_builder import PromptBuilder
-from .file_generator import ProjectFileGenerator
-from .file_manager import FileManagerWidget
+from .ui_builder import ProjectCreatorUI
+from .handlers import EventHandlers
+from .modification_manager import ModificationManager
+
+
+def extract_json_from_response(text):
+    """从 AI 响应中提取 JSON"""
+    if not text:
+        return None
+    def strip_line_numbers(content):
+        lines = content.splitlines()
+        stripped_lines = []
+        for line in lines:
+            stripped = re.sub(r'^\s*\d+[\.\)]?\s*', '', line)
+            stripped_lines.append(stripped)
+        return '\n'.join(stripped_lines)
+    candidates = []
+    match = re.search(r'```json\s*([\s\S]*?)\s*```', text)
+    if match:
+        candidates.append(match.group(1).strip())
+    match = re.search(r'```\s*([\s\S]*?)\s*```', text)
+    if match:
+        candidates.append(match.group(1).strip())
+    match = re.search(r'【?[\u4e00-\u9fa5]*\s*(?:json|JSON|代码块|结果)\s*】?\s*([\s\S]*?)\s*【?[\u4e00-\u9fa5]*\s*(?:结束|结尾|完毕)\s*】?', text)
+    if match:
+        candidates.append(match.group(1).strip())
+    candidates.append(text.strip())
+    for raw in candidates:
+        cleaned = strip_line_numbers(raw)
+        try:
+            return json.loads(cleaned)
+        except:
+            pass
+        json_match = re.search(r'(\{[\s\S]*\}|\[[\s\S]*\])', cleaned)
+        if json_match:
+            try:
+                return json.loads(json_match.group(1))
+            except:
+                pass
+    json_match = re.search(r'(\{[\s\S]*\})', text)
+    if json_match:
+        try:
+            candidate = json_match.group(1)
+            cleaned = strip_line_numbers(candidate)
+            return json.loads(cleaned)
+        except:
+            pass
+    return None
 
 
 class ProjectCreatorWidget(QWidget):
     """项目创建器主控件"""
-    
+
     ai_response_received = Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.current_file = ""
         self.stage = 'idle'
         self.elapsed_seconds = 0
         self.timer = QTimer()
-        self.timer.timeout.connect(self._update_timer)
-        self._init_ui()
+
+        self.controls = ProjectCreatorUI.setup_ui(self)
+        self.file_manager = self.controls['file_manager']
+
+        self.handlers = EventHandlers(self, self.controls)
+        self.modification_manager = ModificationManager(self)
+
         self._bind_signals()
+        self._setup_context_menu()
 
-    def _init_ui(self):
-        layout = QVBoxLayout(self)
-        layout.setSpacing(5)
-        layout.setContentsMargins(5, 5, 5, 5)
+    def _setup_context_menu(self):
+        """为反馈列表添加右键菜单"""
+        self.controls['feedback_list'].setContextMenuPolicy(Qt.CustomContextMenu)
+        self.controls['feedback_list'].customContextMenuRequested.connect(self._show_feedback_context_menu)
 
-        # ---------- 主分割：左侧文件管理器 + 右侧功能区 ----------
-        main_splitter = QSplitter(Qt.Horizontal)
-
-        # 左侧面板：文件管理器 + 日志
-        left_panel = QWidget()
-        left_layout = QVBoxLayout(left_panel)
-        left_layout.setContentsMargins(0, 0, 0, 0)
-        left_layout.setSpacing(5)
-
-        # 文件管理器
-        self.file_manager = FileManagerWidget()
-        left_layout.addWidget(self.file_manager, 3)
-
-        # 日志输出（放到文件管理器下方）
-        log_group = QGroupBox("📋 日志")
-        log_layout = QVBoxLayout(log_group)
-        self.log_text = QTextEdit()
-        self.log_text.setReadOnly(True)
-        self.log_text.setMaximumHeight(150)
-        self.log_text.setStyleSheet("font-size:11px;background:#f8f8f8;")
-        log_layout.addWidget(self.log_text)
-        left_layout.addWidget(log_group, 1)
-
-        main_splitter.addWidget(left_panel)
-
-        # 右侧：功能面板
-        right_panel = QWidget()
-        right_layout = QVBoxLayout(right_panel)
-        right_layout.setContentsMargins(0, 0, 0, 0)
-        right_layout.setSpacing(5)
-
-        # ---------- 输入区 ----------
-        input_group = QGroupBox("📝 项目需求")
-        input_layout = QVBoxLayout(input_group)
-
-        self.desc_edit = QTextEdit()
-        self.desc_edit.setPlaceholderText(
-            "请详细描述您想要创建的项目...\n\n"
-            "示例：\n"
-            "创建一个Python命令行工具，用于批量重命名文件，支持正则表达式替换"
-        )
-        self.desc_edit.setMinimumHeight(200)
-        input_layout.addWidget(self.desc_edit)
-
-        # 按钮行
-        btn_layout = QHBoxLayout()
-        self.btn_generate = QPushButton("🚀 发送请求")
-        self.btn_generate.setStyleSheet(
-            "QPushButton{background:#4CAF50;color:#fff;font-weight:bold;padding:6px 20px;border-radius:4px;}"
-            "QPushButton:disabled{background:#a5d6a7;}"
-        )
-        self.btn_generate.setFixedWidth(120)
-
-        self.btn_clear = QPushButton("清空")
-        self.btn_clear.setFixedWidth(80)
-
-        btn_layout.addStretch()
-        btn_layout.addWidget(self.btn_generate)
-        btn_layout.addWidget(self.btn_clear)
-        input_layout.addLayout(btn_layout)
-
-        right_layout.addWidget(input_group)
-
-        # ---------- 进度条 ----------
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setVisible(False)
-        right_layout.addWidget(self.progress_bar)
-
-        # ---------- 状态栏 ----------
-        self.status_label = QLabel("就绪 | 选择目录后输入需求点击发送")
-        self.status_label.setStyleSheet("color:#666;padding:2px 4px;border-top:1px solid #ddd;")
-        right_layout.addWidget(self.status_label)
-
-        main_splitter.addWidget(right_panel)
-        main_splitter.setSizes([400, 600])
-        layout.addWidget(main_splitter)
+    def _show_feedback_context_menu(self, position):
+        item = self.controls['feedback_list'].itemAt(position)
+        if not item:
+            return
+        menu = QMenu(self)
+        remove_action = QAction("🗑 移除该项", self)
+        remove_action.triggered.connect(self.modification_manager.remove_selected)
+        menu.addAction(remove_action)
+        # 可选：添加"移除所有"等
+        menu.exec_(self.controls['feedback_list'].viewport().mapToGlobal(position))
 
     def _bind_signals(self):
-        self.btn_generate.clicked.connect(self._on_generate)
-        self.btn_clear.clicked.connect(self._on_clear)
-        self.file_manager.directory_changed.connect(self._on_directory_changed)
+        # 文件管理器
+        self.file_manager.file_selected.connect(self.handlers.on_file_selected)
+        self.file_manager.directory_changed.connect(self.handlers.on_directory_changed)
 
-    def _on_directory_changed(self, path):
-        """目录变化时更新状态"""
-        self.status_label.setText(f"当前目录: {path}")
+        # 按钮
+        self.controls['btn_build'].clicked.connect(self.handlers.send_build_request)
+        self.controls['btn_improve'].clicked.connect(self.handlers.send_improve_request)
+        self.controls['btn_clear'].clicked.connect(self.handlers.on_clear)
+        self.controls['btn_unblock'].clicked.connect(self.handlers.unblock)
+        self.controls['btn_run'].clicked.connect(self.handlers.run_current_file)
+        self.controls['btn_feedback_ai'].clicked.connect(self.handlers.send_error_to_ai)
 
-    def _on_generate(self):
-        """发送生成请求"""
-        desc = self.desc_edit.toPlainText().strip()
-        if not desc:
-            QMessageBox.warning(self, "提示", "请输入项目描述")
-            return
+        # 查看 Prompt 按钮
+        self.controls['btn_view_build_prompt'].clicked.connect(self.handlers.view_build_prompt)
+        self.controls['btn_view_improve_prompt'].clicked.connect(self.handlers.view_improve_prompt)
+        self.controls['btn_view_feedback_prompt'].clicked.connect(self.handlers.view_feedback_prompt)
 
-        # 重置日志
-        self.log_text.clear()
-        self.log_text.append(f"📤 发送请求...")
-        self.log_text.append(f"  描述: {desc[:80]}..." if len(desc) > 80 else f"  描述: {desc}")
+        # 修改记录
+        self.controls['btn_apply_selected'].clicked.connect(self.modification_manager.apply_selected)
+        self.controls['btn_undo_selected'].clicked.connect(self.modification_manager.undo_selected)
+        self.controls['btn_apply_all'].clicked.connect(self.modification_manager.apply_all)
+        self.controls['btn_undo_all'].clicked.connect(self.modification_manager.undo_all)
 
-        # 构建提示词
-        prompt = PromptBuilder.build_initial_prompt(desc)
+        # 列表选择
+        self.controls['feedback_list'].itemSelectionChanged.connect(self.modification_manager.on_selection_changed)
 
-        # 更新状态
-        self.stage = 'generating'
-        self.btn_generate.setEnabled(False)
-        self.btn_generate.setText("⏳ 生成中...")
-        self.progress_bar.setVisible(True)
-        self.progress_bar.setValue(10)
-        
-        # 启动计时器
-        self.elapsed_seconds = 0
-        self.timer.start(1000)
-        self.status_label.setText("⏳ 新建项目请求已发送，等待插件反馈...")
+        # 大纲树
+        self.controls['outline_tree'].itemClicked.connect(self.handlers.on_outline_clicked)
 
-        # 发送给AI
-        self._send_to_ai(prompt)
+        # 编辑器更新大纲
+        self.controls['code_editor'].textChanged.connect(self.handlers._update_outline)
 
-    def _update_timer(self):
-        """更新计时器"""
-        self.elapsed_seconds += 1
-        self.status_label.setText(f"⏳ 新建项目请求已发送，等待插件反馈... {self.elapsed_seconds}s")
-
-    def _send_to_ai(self, message: str):
-        """发送消息给AI"""
-        main_win = self.window()
-        if not main_win or not hasattr(main_win, 'bridge_server'):
-            QMessageBox.critical(self, "错误", "Bridge服务未启动")
-            self._reset_state()
-            return
-
-        bridge = main_win.bridge_server
-        if not bridge.clients:
-            QMessageBox.warning(self, "警告", "没有插件客户端连接")
-            self._reset_state()
-            return
-
-        payload = {
-            "type": "ANALYZE_REQUEST",
-            "filename": "project_request",
-            "content": message,
-            "message": "项目创建请求"
-        }
-        try:
-            bridge.send_to_all_clients(payload)
-            self.log_text.append("✅ 请求已发送，等待AI响应...")
-            self.progress_bar.setValue(30)
-        except Exception as e:
-            QMessageBox.critical(self, "错误", f"发送失败: {str(e)}")
-            self._reset_state()
+        # 定时器
+        self.timer.timeout.connect(self.handlers.update_timer)
 
     def append_ai_result(self, text):
-        """接收AI响应（由主窗口调用）"""
         if self.stage != 'generating':
             return
 
-        # 停止计时器
         self.timer.stop()
-        
-        self.log_text.append("📥 收到AI响应，正在解析...")
-        self.progress_bar.setValue(60)
-
-        # 解析文件列表
-        files_data = ProjectFileGenerator.extract_files_from_response(text)
-
-        if not files_data:
-            self.log_text.append("❌ 未能从响应中提取文件数据")
-            self.log_text.append(f"响应预览: {text[:200]}...")
-            self.status_label.setText("❌ 解析AI响应失败")
-            self._reset_state()
+        data = extract_json_from_response(text)
+        if data is None:
+            self.controls['log_text'].append("❌ 未能从响应中提取JSON数据")
+            self.controls['log_text'].append(f"响应预览: {text[:200]}...")
+            self.controls['status_label'].setText("❌ 解析AI响应失败")
+            self.handlers._reset_state()
             return
 
-        # 输出所有文件名到日志
-        self.log_text.append(f"✅ 解析成功，共 {len(files_data)} 个文件")
-        self.log_text.append("📄 文件列表:")
-        for i, file_info in enumerate(files_data, 1):
-            path = file_info.get('path', '')
-            # 还原下划线转义用于显示
-            display_path = path.replace('\\u005f', '_')
-            self.log_text.append(f"  {i}. {display_path}")
-
-        self.progress_bar.setValue(80)
-
-        # 使用当前目录
-        base_dir = self.file_manager.get_current_path()
-        self.log_text.append(f"📁 保存位置: {base_dir}")
-
-        # 生成文件
-        self.log_text.append("📝 开始生成文件...")
-        success_count, errors = ProjectFileGenerator.generate_files(files_data, base_dir)
-
-        self.progress_bar.setValue(100)
-
-        if errors:
-            self.log_text.append(f"⚠️ 生成完成，{len(errors)} 个文件失败")
-            for err in errors:
-                self.log_text.append(f"  ❌ {err}")
-            self.status_label.setText(f"⚠️ 生成完成，{len(errors)} 个文件失败，耗时 {self.elapsed_seconds}s")
-            QMessageBox.warning(self, "完成", f"生成完成，{len(errors)} 个文件失败")
+        if isinstance(data, list):
+            self.modification_manager.display_modifications(data)
+        elif isinstance(data, dict):
+            if 'files' in data and isinstance(data['files'], list):
+                self.modification_manager.display_modifications(data['files'])
+            elif 'path' in data and 'content' in data:
+                self.modification_manager.display_modifications([data])
+            else:
+                self.controls['log_text'].append("⚠️ AI响应格式无法识别")
+                self.handlers._reset_state()
+                return
         else:
-            self.log_text.append(f"✅ 成功生成 {success_count} 个文件")
-            self.log_text.append(f"⏱ 总耗时: {self.elapsed_seconds} 秒")
-            self.status_label.setText(f"✅ 成功生成 {success_count} 个文件，耗时 {self.elapsed_seconds}s")
-            QMessageBox.information(self, "完成", f"成功生成 {success_count} 个文件到:\n{base_dir}")
+            self.controls['log_text'].append("⚠️ AI响应不是列表或字典")
+            self.handlers._reset_state()
+            return
 
-        # 刷新文件管理器
-        self.file_manager._refresh()
-        self.stage = 'complete'
-        self._reset_state()
-
-    def _reset_state(self):
-        """重置状态"""
-        self.stage = 'idle'
-        self.btn_generate.setEnabled(True)
-        self.btn_generate.setText("🚀 发送请求")
-        self.progress_bar.setVisible(False)
-        self.progress_bar.setValue(0)
-        self.timer.stop()
-        
-        # 如果状态标签还是计时状态，重置
-        if "等待插件反馈" in self.status_label.text() or "耗时" in self.status_label.text():
-            self.status_label.setText("就绪")
-
-    def _on_clear(self):
-        """清空"""
-        self.desc_edit.clear()
-        self.log_text.clear()
-        self.status_label.setText("已清空")
-        self._reset_state()
+        self.controls['status_label'].setText(f"收到 {len(self.modification_manager.modification_history)} 个文件")
+        self.handlers.after_response()

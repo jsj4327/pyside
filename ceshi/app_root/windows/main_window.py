@@ -54,17 +54,15 @@ class MainAppWindow(QMainWindow):
 
     # ---------- 插件连接回调 ----------
     def on_plugin_connected(self, count):
-        """连接建立时更新连接数"""
         self._update_bridge_status(True, count)
         self.statusBar().showMessage(f"插件已连接，当前连接数: {count}", 2000)
 
     # ---------- 插件断开回调 ----------
     def on_plugin_disconnected(self, count):
-        """连接断开时更新连接数"""
-        self._update_bridge_status(True, count)  # 服务仍在运行
+        self._update_bridge_status(True, count)
         self.statusBar().showMessage(f"插件断开，当前连接数: {count}", 2000)
 
-    # ---------- 收到插件消息 ----------
+    # ---------- 收到插件消息（只转发给当前活动 Tab） ----------
     def on_browser_message(self, data):
         if data.get('type') != 'AI_RESULT':
             return
@@ -72,18 +70,17 @@ class MainAppWindow(QMainWindow):
         if not result_text:
             return
 
-        current_widget = self.centralWidget().currentWidget()
-        if hasattr(current_widget, 'append_ai_result'):
-            current_widget.append_ai_result(result_text)
-
+        # 1. 记录到 AI 记录器（Tab4，始终记录）
         if hasattr(self, 'ai_record_widget'):
             self.ai_record_widget.check_and_add(result_text)
 
-        if hasattr(self, 'source_viewer'):
-            self.source_viewer.handle_ai_response(result_text)
-
-        if hasattr(self, 'project_creator'):
-            self.project_creator.append_ai_result(result_text)
+        # 2. 只转发给当前活动 Tab（避免交叉干扰）
+        current_widget = self.centralWidget().currentWidget()
+        if hasattr(current_widget, 'append_ai_result'):
+            current_widget.append_ai_result(result_text)
+        elif hasattr(current_widget, 'handle_ai_response'):
+            current_widget.handle_ai_response(result_text)
+        # 如果当前 Tab 没有处理 AI 响应的方法，则忽略
 
     # ---------- 窗口设置 ----------
     def _set_window_icon(self):
@@ -129,7 +126,6 @@ class MainAppWindow(QMainWindow):
         self.source_viewer = SourceViewerWidget()
         tab_widget.addTab(self.source_viewer, "📄 源码预览")
 
-        # 新增：项目创建器 Tab
         self.project_creator = get_project_creator_module_widget()
         tab_widget.addTab(self.project_creator, "✨ 新建项目")
 

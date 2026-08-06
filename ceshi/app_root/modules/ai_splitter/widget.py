@@ -353,7 +353,10 @@ class AISplitterWidget(QWidget, FileNavigatorMixin, AIHandlerMixin):
         file_map = {}
         for item in self._response_chunks:
             if isinstance(item, dict) and 'path' in item and 'content' in item:
-                file_map[item['path']] = item['content']
+                # 替换路径和内容中的 \u005f 为 _
+                path = item['path'].replace('\\u005f', '_')
+                content = item['content'].replace('\\u005f', '_')
+                file_map[path] = content
         if not file_map:
             self.log_text.append("⚠️ 没有有效的文件条目")
             self._reset_analyze_button()

@@ -8,13 +8,22 @@
   ],
   "prompts": [
     {
+      "id": "1785966174",
+      "title": "linux draw 绘图",
+      "category": "编程协同",
+      "tags": "",
+      "prompt": "帮我设计一个linux下矢量绘图标图的工具，使用pyside2框架，使用现代化软件架构模式，便于扩展。单个py文件膨胀时候，便于无感拆分扩展为多个文件。",
+      "notes": "",
+      "updated_at": "2026-08-06 05:42:54"
+    },
+    {
       "id": "1785929659",
       "title": "agentAi开始建项目",
       "category": "编程协同",
       "tags": "",
-      "prompt": "1、新增一个tab，功能是从一个请求开始新建一个项目。为这个tab新建一个模块，多文件架构布局。为文件浏览器再设置一个子模块。为预览代码设置一个子模块。\n\n2、tab中新建一个输入区。文本框接收输入，一个发送请求按钮，将文本输入组成一个需求，要求ai返回json格式回复，包含文件名，文件内容。参考源码预览整个模块中对ai提出的返回的json的格式、字符转换等要求。\n\n添加一个文件浏览器查看一个文件夹路径，在左侧。浏览浏览器可以有上一层，后退，打开功能。右键选中节点可以删除、复制、粘贴。再丰富其他功能。\n\n发送请求后，在状态栏上显示 新建项目 请求已发送 然后计时 x秒。等待插件反馈后，将反馈回来的所有文件名反馈在日志中，按照文件名在文件浏览器的当前路径下生成文件。\n\n{\"type\":\"ANALYZE_REQUEST\",\"filename\":\"ai_request\",\"content\":\"请分析以下文件内容，并给出一个重构方案。\\n文件内容：\\n```\\nimport sys\\nfrom PySide2.QtWidgets import QApplication\\nfrom PySide2.QtCore import Qt\\nfrom PySide2.QtGui import QFont\\n\\nfrom ui.main_window import LauncherWindow\\n\\nif __name__ == \\\"__main__\\\":\\n    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)\\n    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)\\n    app = QApplication(sys.argv)\\n\\n    font = QFont(\\\"Noto Sans CJK SC\\\", 10)\\n    if not font.exactMatch():\\n        font = QFont(\\\"Microsoft YaHei\\\", 10)\\n    app.setFont(font)\\n\\n    window = LauncherWindow()\\n    window.show()\\n    sys.exit(app.exec_())\\n\\n```\\n请按以下JSON格式返回重构方案（只返回JSON）：\\n{\\\"type\\\": \\\"plan\\\", \\\"plan_description\\\": \\\"方案描述\\\", \\\"file_structure\\\": [{\\\"path\\\": \\\"相对路径/文件名\\\", \\\"description\\\": \\\"文件作用\\\"}]}\\n⚠️ 重要：为了确保JSON数据在网页端正确传输，请将JSON字符串中所有下划线 '_' 字符替换为 Unicode 转义序列 '\\\\u005f'。\\n示例：'__init__.py' 应写为 '\\\\u005f\\\\u005finit\\\\u005f.py'；'_internal' 应写为 '\\\\u005finternal'。\\n请将整个JSON结构放在 ```json 代码块中返回。\",\"message\":\"AI 拆分助手请求\"}\n\n\n\n一个文本框预览代码。综合前面预览代码模块的所有功能。可以运行py文件。\n一个调试控件的综合体，可以查看运行输出，向ai反馈运行报错。\n一个接收反馈的综合体，可以解析ai返回的结果，应用反馈，撤销等。\n\n发送请求的几个修改：1 不要触发深度思考，直接返回json。2、参考源码预览整个模块中对ai提出的返回的json的格式、字符转换等要求，修改被tab中的相关代码。\n",
+      "prompt": "1、新增一个tab，功能是从一个请求开始新建一个项目。为这个tab新建一个模块，多文件架构布局。为文件浏览器再设置一个子模块。为预览代码设置一个子模块。\n\n2、tab中新建一个输入区。文本框接收输入，一个发送请求按钮，将文本输入组成一个需求，要求ai返回json格式回复，包含文件名，文件内容。参考源码预览整个模块中对ai提出的返回的json的格式、字符转换等要求。\n\n添加一个文件浏览器查看一个文件夹路径，在左侧。浏览浏览器可以有上一层，后退，打开功能。右键选中节点可以删除、复制、粘贴。再丰富其他功能。\n\n发送请求后，在状态栏上显示 新建项目 请求已发送 然后计时 x秒。等待插件反馈后，将反馈回来的所有文件名反馈在日志中，按照文件名在文件浏览器的当前路径下生成文件。\n\n{\"type\":\"ANALYZE_REQUEST\",\"filename\":\"ai_request\",\"content\":\"请分析以下文件内容，并给出一个重构方案。\\n文件内容：\\n```\\nimport sys\\nfrom PySide2.QtWidgets import QApplication\\nfrom PySide2.QtCore import Qt\\nfrom PySide2.QtGui import QFont\\n\\nfrom ui.main_window import LauncherWindow\\n\\nif __name__ == \\\"__main__\\\":\\n    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)\\n    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)\\n    app = QApplication(sys.argv)\\n\\n    font = QFont(\\\"Noto Sans CJK SC\\\", 10)\\n    if not font.exactMatch():\\n        font = QFont(\\\"Microsoft YaHei\\\", 10)\\n    app.setFont(font)\\n\\n    window = LauncherWindow()\\n    window.show()\\n    sys.exit(app.exec_())\\n\\n```\\n请按以下JSON格式返回重构方案（只返回JSON）：\\n{\\\"type\\\": \\\"plan\\\", \\\"plan_description\\\": \\\"方案描述\\\", \\\"file_structure\\\": [{\\\"path\\\": \\\"相对路径/文件名\\\", \\\"description\\\": \\\"文件作用\\\"}]}\\n⚠️ 重要：为了确保JSON数据在网页端正确传输，请将JSON字符串中所有下划线 '_' 字符替换为 Unicode 转义序列 '\\\\u005f'。\\n示例：'__init__.py' 应写为 '\\\\u005f\\\\u005finit\\\\u005f.py'；'_internal' 应写为 '\\\\u005finternal'。\\n请将整个JSON结构放在 ```json 代码块中返回。\",\"message\":\"AI 拆分助手请求\"}\n\n\n\n一个文本框预览代码。综合前面预览代码模块的所有功能。可以运行py文件。\n一个调试控件的综合体，可以查看运行输出，向ai反馈运行报错。\n一个接收反馈的综合体，可以解析ai返回的结果，应用反馈，撤销等。\n\n清空后面添加一个按钮，查看项目请求prompt，点击在发送给ai的prompt文本框中显示请求的综合prompt。反馈错误前面添加一个按钮，查看反馈prompt，逻辑相同。\n\n在文件浏览器下面增加3个radiobox，1是不上传文件，2是上传当前选中文件 3是上传选中文件夹文件，在 改进按钮，和反馈按钮按下的时候检查，然后将相应的文件加入请求中发送给ai。\n\n修改列表中，不需要的，可以右键取消，然后恢复正常监听等待状态\n\n\n发送请求的几个修改：1 不要触发深度思考，直接返回json。2、参考源码预览整个模块中对ai提出的返回的json的格式、字符转换等要求，修改被tab中的相关代码。\n",
       "notes": "",
-      "updated_at": "2026-08-05 21:57:50"
+      "updated_at": "2026-08-06 18:00:17"
     },
     {
       "id": "1785729329",

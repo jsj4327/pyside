@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Gemini",
+  "version": "1.0",
+  "description": "将接收到的消息注入到当前页面的聊天输入框并发送",
+  "permissions": [
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "ws://127.0.0.1:9002/*",
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "打开/关闭 注入面板"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content_script.js"],
+      "run_at": "document_end"
+    }
+  ]
+}
