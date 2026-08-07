@@ -34,6 +34,7 @@ def extract_json_from_response(text):
     candidates.append(text.strip())
     for raw in candidates:
         cleaned = strip_line_numbers(raw)
+        cleaned = cleaned.replace('\\u005f', '_')
         try:
             return json.loads(cleaned)
         except:
@@ -49,6 +50,7 @@ def extract_json_from_response(text):
         try:
             candidate = json_match.group(1)
             cleaned = strip_line_numbers(candidate)
+            cleaned = cleaned.replace('\\u005f', '_')
             return json.loads(cleaned)
         except:
             pass
@@ -89,7 +91,6 @@ class ProjectCreatorWidget(QWidget):
         remove_action = QAction("🗑 移除该项", self)
         remove_action.triggered.connect(self.modification_manager.remove_selected)
         menu.addAction(remove_action)
-        # 可选：添加"移除所有"等
         menu.exec_(self.controls['feedback_list'].viewport().mapToGlobal(position))
 
     def _bind_signals(self):
@@ -129,16 +130,18 @@ class ProjectCreatorWidget(QWidget):
         self.timer.timeout.connect(self.handlers.update_timer)
 
     def append_ai_result(self, text):
-        if self.stage != 'generating':
-            return
+        """接收 AI 响应，无论当前状态如何，都尝试解析并显示"""
+        # 移除了原来的 stage 检查，使 idle 状态也能接收
 
-        self.timer.stop()
+        # 如果当前不是 generating 状态，记录一条日志
+        if self.stage != 'generating':
+            self.controls['log_text'].append("📥 收到被动AI响应（未在请求中）")
+
         data = extract_json_from_response(text)
         if data is None:
             self.controls['log_text'].append("❌ 未能从响应中提取JSON数据")
             self.controls['log_text'].append(f"响应预览: {text[:200]}...")
             self.controls['status_label'].setText("❌ 解析AI响应失败")
-            self.handlers._reset_state()
             return
 
         if isinstance(data, list):
@@ -150,12 +153,16 @@ class ProjectCreatorWidget(QWidget):
                 self.modification_manager.display_modifications([data])
             else:
                 self.controls['log_text'].append("⚠️ AI响应格式无法识别")
-                self.handlers._reset_state()
                 return
         else:
             self.controls['log_text'].append("⚠️ AI响应不是列表或字典")
-            self.handlers._reset_state()
             return
 
         self.controls['status_label'].setText(f"收到 {len(self.modification_manager.modification_history)} 个文件")
-        self.handlers.after_response()
+        # 如果之前在 generating 状态，则调用 after_response 重置
+        if self.stage == 'generating':
+            self.handlers.after_response()
+        else:
+            # 如果 idle 状态，确保按钮恢复（可选）
+            self.controls['btn_build'].setEnabled(True)
+            self.controls['btn_improve'].setEnabled(True)

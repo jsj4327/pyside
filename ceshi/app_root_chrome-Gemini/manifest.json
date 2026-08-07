@@ -2,10 +2,11 @@
   "manifest_version": 3,
   "name": "Gemini",
   "version": "1.0",
-  "description": "将接收到的消息注入到当前页面的聊天输入框并发送",
+  "description": "将接收到的消息注入到当前页面的聊天输入框并发送，仅点击图标激活当前标签页才注入",
   "permissions": [
     "storage",
-    "alarms"
+    "alarms",
+    "scripting"
   ],
   "host_permissions": [
     "ws://127.0.0.1:9002/*",
@@ -15,13 +16,6 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "打开/关闭 注入面板"
-  },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content_script.js"],
-      "run_at": "document_end"
-    }
-  ]
+    "default_title": "打开/关闭 注入面板（仅当前标签生效）"
+  }
 }

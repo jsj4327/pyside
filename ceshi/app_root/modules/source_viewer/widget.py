@@ -41,6 +41,8 @@ def extract_json_from_response(text):
     candidates.append(text.strip())
     for raw in candidates:
         cleaned = strip_line_numbers(raw)
+        # 新增：将 \u005f 替换为 _，兼容 AI 响应中的转义
+        cleaned = cleaned.replace('\\u005f', '_')
         try:
             return json.loads(cleaned)
         except:
@@ -56,6 +58,7 @@ def extract_json_from_response(text):
         try:
             candidate = json_match.group(1)
             cleaned = strip_line_numbers(candidate)
+            cleaned = cleaned.replace('\\u005f', '_')   # 新增
             return json.loads(cleaned)
         except:
             pass

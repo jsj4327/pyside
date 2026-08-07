@@ -60,8 +60,9 @@ class AIHandlerMixin:
             # 更健壮：使用正则提取 JSON 对象或数组
             # 先尝试直接清理行号后解析
             cleaned = strip_line_numbers(raw_candidate)
+            # 新增：将 \u005f 替换为 _，兼容 AI 响应中的转义
+            cleaned = cleaned.replace('\\u005f', '_')
 
-            # 尝试解析
             try:
                 return json.loads(cleaned)
             except json.JSONDecodeError:
@@ -86,8 +87,8 @@ class AIHandlerMixin:
         if json_match:
             try:
                 candidate = json_match.group(1)
-                # 清理行号后尝试
                 cleaned = strip_line_numbers(candidate)
+                cleaned = cleaned.replace('\\u005f', '_')   # 新增
                 return json.loads(cleaned)
             except json.JSONDecodeError:
                 pass

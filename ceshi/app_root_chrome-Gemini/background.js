@@ -1,5 +1,4 @@
-// background.js - V3 激进保活 + 主动检测 + 即时状态同步
-
+// background.js - V3 激进保活 + 主动检测 + 即时状态同步 + 仅当前Tab动态注入
 let ws = null;
 let isConnected = false;
 let history = [];
@@ -10,10 +9,13 @@ let heartbeatTimeout = null;
 const HEARTBEAT_INTERVAL = 10000; // 10 秒
 const HEARTBEAT_TIMEOUT = 5000;
 
+// 记录当前已注入脚本的标签页ID
+let injectedTabId = null;
+
 // ============================================
 // 保持 Service Worker 活跃（每 12 秒唤醒）
 // ============================================
-chrome.alarms.create('keepAlive', { periodInMinutes: 0.2 }); // 12 秒，避免使用 periodInSeconds
+chrome.alarms.create('keepAlive', { periodInMinutes: 0.2 }); // 12 秒
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'keepAlive') {
     // 主动检查 WebSocket 状态
@@ -180,8 +182,41 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-chrome.action.onClicked.addListener((tab) => {
-  chrome.tabs.sendMessage(tab.id, { type: 'togglePanel' });
+// ========== 核心改造：点击图标动态注入/切换面板 ==========
+chrome.action.onClicked.addListener(async (tab) => {
+  if (!tab.id) return;
+
+  try {
+    if (injectedTabId === tab.id) {
+      // 当前标签已经注入脚本，直接切换面板显示/隐藏
+      await chrome.tabs.sendMessage(tab.id, { type: 'togglePanel' });
+      return;
+    }
+
+    // 当前标签未注入，动态注入 content_script.js
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ["content_script.js"]
+    });
+    injectedTabId = tab.id;
+    console.log(`[BG] 已为标签页 ${tab.id} 注入 content_script.js`);
+
+    // 注入完成后立刻打开面板
+    setTimeout(async ()=>{
+      await chrome.tabs.sendMessage(tab.id, { type: 'togglePanel' });
+    }, 200);
+
+  } catch (err) {
+    console.error("[BG] 脚本注入失败：", err);
+    injectedTabId = null;
+  }
+});
+
+// 标签页关闭时清理注入记录
+chrome.tabs.onRemoved.addListener((closedTabId) => {
+  if (injectedTabId === closedTabId) {
+    injectedTabId = null;
+  }
 });
 
 connect();

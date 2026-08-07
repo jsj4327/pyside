@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 import time
+import re
 from PySide2.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QListWidget,
     QListWidgetItem, QTextEdit, QLabel, QPushButton, QSplitter
@@ -92,13 +93,18 @@ class AIRecordWidget(QWidget):
                 self.content_edit.setPlainText(text)
 
     def check_and_add(self, text):
-        is_error = self._check_error(text)
+        # 始终记录，只做简单的错误标记（避免因复杂解析导致阻塞）
+        is_error = self._check_error_simple(text)
         self.append_record(text, is_error)
 
-    def _check_error(self, text):
-        error_keywords = ['错误', '失败', 'exception', 'error', '解析失败', '格式错误']
-        text_lower = text.lower()
-        for kw in error_keywords:
-            if kw in text_lower:
-                return True
+    def _check_error_simple(self, text):
+        """简单的错误检查，仅基于明显的关键词，不会抛出异常"""
+        if not text:
+            return False
+        lower = text.lower()
+        # 如果以明确的错误标识开头或包含明确的错误短语
+        if (lower.startswith(("错误:", "失败:", "exception:", "error:")) or
+            any(phrase in lower for phrase in ["解析失败", "格式错误", "连接失败", "超时", "traceback"])):
+            return True
+        # 避免误判，仅当字符串较短且完全匹配错误模式
         return False

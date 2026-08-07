@@ -62,7 +62,7 @@ class MainAppWindow(QMainWindow):
         self._update_bridge_status(True, count)
         self.statusBar().showMessage(f"插件断开，当前连接数: {count}", 2000)
 
-    # ---------- 收到插件消息（只转发给当前活动 Tab） ----------
+    # ---------- 收到插件消息（显式发送给新建项目 Tab） ----------
     def on_browser_message(self, data):
         if data.get('type') != 'AI_RESULT':
             return
@@ -74,13 +74,20 @@ class MainAppWindow(QMainWindow):
         if hasattr(self, 'ai_record_widget'):
             self.ai_record_widget.check_and_add(result_text)
 
-        # 2. 只转发给当前活动 Tab（避免交叉干扰）
+        # 2. 显式转发给新建项目 Tab（Tab5），无论是否活动
+        if hasattr(self, 'project_creator') and hasattr(self.project_creator, 'append_ai_result'):
+            self.project_creator.append_ai_result(result_text)
+
+        # 3. 转发给当前活动 Tab（如果有且不是新建项目 Tab，避免重复）
         current_widget = self.centralWidget().currentWidget()
-        if hasattr(current_widget, 'append_ai_result'):
-            current_widget.append_ai_result(result_text)
-        elif hasattr(current_widget, 'handle_ai_response'):
-            current_widget.handle_ai_response(result_text)
-        # 如果当前 Tab 没有处理 AI 响应的方法，则忽略
+        if current_widget is not None:
+            # 如果当前活动 Tab 是新建项目 Tab，则上面已调用，跳过
+            if current_widget is self.project_creator:
+                return
+            if hasattr(current_widget, 'append_ai_result'):
+                current_widget.append_ai_result(result_text)
+            elif hasattr(current_widget, 'handle_ai_response'):
+                current_widget.handle_ai_response(result_text)
 
     # ---------- 窗口设置 ----------
     def _set_window_icon(self):
