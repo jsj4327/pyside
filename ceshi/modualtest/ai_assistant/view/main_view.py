@@ -72,56 +72,7 @@ class AIAssistantView(QWidget):
         main_layout.addWidget(self.text_edit)
         print("[VIEW-UI] 文本框创建完成")
         
-        # ---- 2. 预设按钮行 ----
-        preset_layout = QHBoxLayout()
-        preset_layout.setSpacing(6)
-        
-        self.preset_buttons = []
-        presets = [
-            ("🔍 代码审查", 0),
-            ("⚡ 代码优化", 1),
-            ("📝 添加注释", 2),
-            ("🔧 错误修复", 3),
-            ("📖 功能解释", 4),
-            ("🧪 生成测试", 5),
-        ]
-        
-        for text, idx in presets:
-            btn = QPushButton(text)
-            btn.setCheckable(True)
-            btn.setFixedHeight(28)
-            btn.setStyleSheet("""
-                QPushButton {
-                    background: #f0f0f0;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                    padding: 2px 10px;
-                    font-size: 12px;
-                }
-                QPushButton:hover {
-                    background: #e3f2fd;
-                    border-color: #90caf9;
-                }
-                QPushButton:checked {
-                    background: #2196F3;
-                    color: white;
-                    border-color: #1976D2;
-                }
-            """)
-            btn.clicked.connect(lambda checked, i=idx: self.sig_preset_clicked.emit(i))
-            self.preset_buttons.append(btn)
-            preset_layout.addWidget(btn)
-        
-        # 添加右键提示
-        hint_label = QLabel("💡 右键更多模板")
-        hint_label.setStyleSheet("color:#999;font-size:11px;")
-        preset_layout.addWidget(hint_label)
-        
-        preset_layout.addStretch()
-        main_layout.addLayout(preset_layout)
-        print("[VIEW-UI] 预设按钮创建完成")
-        
-        # ---- 3. 文件选项（3个CheckBox） ----
+        # ---- 2. 文件选项（3个CheckBox） ----
         option_layout = QHBoxLayout()
         option_layout.setSpacing(16)
         
@@ -151,7 +102,7 @@ class AIAssistantView(QWidget):
         main_layout.addLayout(option_layout)
         print("[VIEW-UI] 文件选项创建完成")
         
-        # ---- 4. 操作按钮行（拆分发送+下拉） ----
+        # ---- 3. 操作按钮行（拆分发送+下拉） ----
         btn_layout = QHBoxLayout()
         btn_layout.setSpacing(0)
         
@@ -231,7 +182,7 @@ class AIAssistantView(QWidget):
         main_layout.addLayout(btn_layout)
         print("[VIEW-UI] 操作按钮创建完成")
         
-        # ---- 5. 状态栏 ----
+        # ---- 4. 状态栏 ----
         self.status_label = QLabel("就绪")
         self.status_label.setStyleSheet("color:#666;font-size:11px;padding:2px 4px;")
         main_layout.addWidget(self.status_label)
@@ -239,7 +190,7 @@ class AIAssistantView(QWidget):
         layout.addWidget(main_group)
         print("[VIEW-UI] 状态栏创建完成")
         
-        # ---- 6. 历史菜单 ----
+        # ---- 5. 历史菜单 ----
         print("[VIEW-MENU] 开始创建历史菜单")
         self.history_menu = QMenu(self)
         self.history_menu.setStyleSheet("""
@@ -333,7 +284,7 @@ class AIAssistantView(QWidget):
                 build_menu.addAction(action)
                 has_arch_templates = True
         
-        # 自定义模板（只显示架构相关的，这里显示所有自定义）
+        # 自定义模板
         if custom_templates:
             if has_arch_templates:
                 build_menu.addSeparator()
@@ -356,23 +307,6 @@ class AIAssistantView(QWidget):
         edit_action.setToolTip("编辑所有模板文件")
         edit_action.triggered.connect(self._on_edit_templates)
         menu.addAction(edit_action)
-        
-        menu.addSeparator()
-        
-        # ---- 预设快捷 ----
-        preset_menu = menu.addMenu("📋 预设模板")
-        presets = [
-            ("🔍 代码审查", 0),
-            ("⚡ 代码优化", 1),
-            ("📝 添加注释", 2),
-            ("🔧 错误修复", 3),
-            ("📖 功能解释", 4),
-            ("🧪 生成测试", 5),
-        ]
-        for text, idx in presets:
-            action = QAction(text, self)
-            action.triggered.connect(partial(self.sig_preset_clicked.emit, idx))
-            preset_menu.addAction(action)
         
         menu.addSeparator()
         
@@ -637,12 +571,12 @@ class AIAssistantView(QWidget):
             self.radio_folder.setChecked(True)
     
     def clear_preset_selection(self):
-        for btn in self.preset_buttons:
-            btn.setChecked(False)
+        """清除预设选中状态（预设按钮已删除，此方法保留为空）"""
+        pass
     
     def set_preset_selection(self, index: int):
-        for i, btn in enumerate(self.preset_buttons):
-            btn.setChecked(i == index)
+        """设置预设选中（预设按钮已删除，此方法保留为空）"""
+        pass
     
     def update_status(self, status: str, info: str = ""):
         print(f"[VIEW-STATUS] 更新状态: {status}, {info}")
